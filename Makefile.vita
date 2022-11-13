@@ -1,0 +1,212 @@
+TARGET		:= jfblood
+TITLE		:= JONOFBLOD
+GIT_VERSION := $(shell git describe --abbrev=6 --dirty --always --tags)
+SHADERS     := shaders
+
+LIBS = -lvitaGL -lvitashark -lmathneon -lvorbisfile -lvorbis -logg  -lspeexdsp -lmpg123 -lSceShaccCgExt \
+	-lSDL2 -lc -lSceCommonDialog_stub -lSceAudio_stub -lSceLibKernel_stub -lSceShaccCg_stub \
+	-ltaihen_stub -lSceNet_stub -lSceNetCtl_stub -lpng -lSceDisplay_stub -lSceGxm_stub -lSceHid_stub \
+	-lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceMotion_stub -lm -lSceAppMgr_stub \
+	-lSceAppUtil_stub -lScePgf_stub -ljpeg -lSceRtc_stub -lScePower_stub -lcurl -lssl -lcrypto -lz \
+	-lSceKernelDmacMgr_stub -lSceIme_stub -lSceAudioIn_stub
+
+# build locations
+SRC=src
+EINC=$(EROOT)/include
+ELIB=$(EROOT)
+
+#engine
+EROOT ?= jfbuild
+ESRC ?= $(EROOT)/src
+
+MACTROOT ?= jfmact
+ENETROOT ?= enet
+SMACKERROOT ?= libsmacker
+AUDIOSRC = jfaudiolib/src
+
+JFBUILDOBJS = \
+	$(ESRC)/a-c.o \
+  	$(ESRC)/asmprot.o \
+	$(ESRC)/baselayer.o \
+	$(ESRC)/cache1d.o \
+	$(ESRC)/compat.o \
+	$(ESRC)/crc32.o \
+	$(ESRC)/defs.o \
+	$(ESRC)/engine.o \
+	$(ESRC)/kplib.o \
+	$(ESRC)/osd.o \
+	$(ESRC)/polymost.o \
+	#$(ESRC)/glbuild.o \
+	#$(ESRC)/hightile.o \
+	#$(ESRC)/mdsprite.o \
+	#$(ESRC)/polymosttex.o \
+	#$(ESRC)/polymosttexcache.o \
+	$(ESRC)/pragmas.o \
+	$(ESRC)/scriptfile.o \
+	$(ESRC)/sdlayer2.o \
+	$(ESRC)/textfont.o \
+	$(ESRC)/smalltextfont.o \
+	$(ESRC)/mmulti_null.o \
+	$(ESRC)/version.o
+	
+JFMACTOBJS = \
+	$(MACTROOT)/util_lib.o \
+	$(MACTROOT)/file_lib.o \
+	$(MACTROOT)/control.o \
+	$(MACTROOT)/keyboard.o \
+	$(MACTROOT)/mouse.o \
+	$(MACTROOT)/mathutil.o \
+	$(MACTROOT)/scriplib.o \
+	$(MACTROOT)/animlib.o
+
+JFAUDIOLIBOBJS= \
+	$(AUDIOSRC)/drivers.o \
+	$(AUDIOSRC)/fx_man.o \
+	$(AUDIOSRC)/cd.o \
+	$(AUDIOSRC)/multivoc.o \
+	$(AUDIOSRC)/mix.o \
+	$(AUDIOSRC)/mixst.o \
+	$(AUDIOSRC)/pitch.o \
+	$(AUDIOSRC)/vorbis.o \
+	$(AUDIOSRC)/music.o \
+	$(AUDIOSRC)/midi.o \
+	$(AUDIOSRC)/driver_sdl.o \
+	$(AUDIOSRC)/driver_nosound.o \
+	$(AUDIOSRC)/asssys.o
+
+ENETOBJ=$(ENETROOT)/callbacks.o \
+	$(ENETROOT)/host.o \
+	$(ENETROOT)/list.o \
+	$(ENETROOT)/packet.o \
+	$(ENETROOT)/peer.o \
+	$(ENETROOT)/protocol.o \
+	$(ENETROOT)/unix.o \
+	$(ENETROOT)/win32.o
+
+SMACKEROBJ=$(SMACKERROOT)/smacker.o
+
+GAMEOBJS = \
+	$(SRC)/actor.o \
+	$(SRC)/ai.o \
+	$(SRC)/aibat.o \
+	$(SRC)/aibeast.o \
+	$(SRC)/aiboneel.o \
+	$(SRC)/aiburn.o \
+	$(SRC)/aicaleb.o \
+	$(SRC)/aicerber.o \
+	$(SRC)/aicult.o \
+	$(SRC)/aigarg.o \
+	$(SRC)/aighost.o \
+	$(SRC)/aigilbst.o \
+	$(SRC)/aihand.o \
+	$(SRC)/aihound.o \
+	$(SRC)/aiinnoc.o \
+	$(SRC)/aipod.o \
+	$(SRC)/airat.o \
+	$(SRC)/aispid.o \
+	$(SRC)/aitchern.o \
+	$(SRC)/aizomba.o \
+	$(SRC)/aizombf.o \
+	$(SRC)/asound.o \
+	$(SRC)/blood.o \
+	$(SRC)/callback.o \
+	$(SRC)/choke.o \
+	$(SRC)/common.o \
+	$(SRC)/compat.o \
+	$(SRC)/config.o \
+	$(SRC)/db.o \
+	$(SRC)/demo.o \
+	$(SRC)/dude.o \
+	$(SRC)/endgame.o \
+	$(SRC)/eventq.o \
+	$(SRC)/fire.o \
+	$(SRC)/fx.o \
+	$(SRC)/gamemenu.o \
+	$(SRC)/getopt.o \
+	$(SRC)/gfx.o \
+	$(SRC)/gib.o \
+	$(SRC)/globals.o \
+	$(SRC)/gui.o \
+	$(SRC)/inifile.o \
+	$(SRC)/iob.o \
+	$(SRC)/levels.o \
+	$(SRC)/loadsave.o \
+	$(SRC)/map2d.o \
+	$(SRC)/messages.o \
+	$(SRC)/misc.o \
+	$(SRC)/network.o \
+	$(SRC)/palette.o \
+	$(SRC)/player.o \
+	$(SRC)/qav.o \
+	$(SRC)/qheap.o \
+	$(SRC)/sectorfx.o \
+	$(SRC)/seq.o \
+	$(SRC)/sfx.o \
+	$(SRC)/sound.o \
+	$(SRC)/trig.o \
+	$(SRC)/triggers.o \
+	$(SRC)/warp.o \
+	$(SRC)/weapon.o \
+	$(SRC)/controls.o \
+	$(SRC)/credits.o \
+	$(SRC)/gameutil.o \
+	$(SRC)/menu.o \
+	$(SRC)/mirrors.o \
+	$(SRC)/osdcmd.o \
+	$(SRC)/replace.o \
+	$(SRC)/resource.o \
+	$(SRC)/tile.o \
+	$(SRC)/view.o \
+	$(SRC)/screen.o \
+	$(SMACKEROBJ) \
+	$(ENETOBJ)
+
+OBJS     := $(GAMEOBJS) $(JFBUILDOBJS) $(JFAUDIOLIBOBJS) $(JFMACTOBJS)
+
+PREFIX  = arm-vita-eabi
+CC      = $(PREFIX)-gcc
+CXX      = $(PREFIX)-g++
+CFLAGS  = -fsigned-char -Wl,-q,--wrap,fopen,--wrap,opendir,--wrap,open,--wrap,access \
+	-O3 -g -fno-optimize-sibling-calls \
+	-ffast-math -mtune=cortex-a9 -mfpu=neon -DHAVE_VORBIS -Isrc -D__AMIGA__ \
+	-Ijfbuild/include -Ijfbuild/src -Ijfmact -Ijfaudiolib/include -DVITA -DHAVE_SDL \
+	-Wno-implicit-function-declaration -I$(VITASDK)/$(PREFIX)/include/SDL2
+	
+ifeq ($(WANTON),1)
+CFLAGS += -DWANTON
+endif
+
+CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11
+ASFLAGS = $(CFLAGS)
+
+ifeq ($(WANTON),1)
+all: $(TARGET).bin
+
+$(TARGET).bin: $(TARGET).velf
+	vita-make-fself -c -s $< build/$(TARGET).bin
+else
+all: $(TARGET).vpk
+
+$(TARGET).vpk: $(TARGET).velf
+	vita-make-fself -c -s $< build/eboot.bin
+	vita-mksfoex -s TITLE_ID=$(TITLE) -d ATTRIBUTE2=12 "Shadow Warrior" param.sfo
+	vita-pack-vpk -s param.sfo -b build/eboot.bin \
+		--add build/sce_sys/icon0.png=sce_sys/icon0.png \
+		--add build/sce_sys/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
+		--add build/sce_sys/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
+		--add build/sce_sys/livearea/contents/wanton.png=sce_sys/livearea/contents/wanton.png \
+		--add build/sce_sys/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
+		--add build/jfblood.bin=jfblood.bin \
+		$(TARGET).vpk
+endif
+
+%.velf: %.elf
+	cp $< $<.unstripped.elf
+	$(PREFIX)-strip -g $<
+	vita-elf-create $< $@
+
+$(TARGET).elf: $(OBJS)
+	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
+
+clean:
+	@rm -rf $(TARGET).velf $(TARGET).elf $(OBJS) $(TARGET).elf.unstripped.elf $(TARGET).vpk build/eboot.bin ./param.sfo

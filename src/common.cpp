@@ -43,6 +43,53 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "common.h"
 #include "common_game.h"
 
+#include <dirent.h>
+
+#ifdef __vita__
+char patched_fname[512];
+char *patch_fname(char *fname) {
+	if (strstr(fname, "ux0")) {
+		char *s = strstr(fname, ".");
+		if (s)
+			fname = s;
+		else
+			return fname;
+	}
+	
+	if (fname[0] == '.') {
+		char *s = strstr(fname, "/");
+		if (s)
+			fname = s + 1;
+		else
+			fname++;
+	}
+	
+	if (strstr(fname, "app0:")) {
+		sprintf(patched_fname, "ux0:data/NBlood%s", &fname[5]);
+	} else {
+		sprintf(patched_fname, "ux0:data/NBlood/%s", fname);
+	}
+
+	return patched_fname;
+}
+
+int __wrap_access(const char *fname, int mode) {
+	return __real_access(patch_fname(fname), mode);
+}
+
+FILE *__wrap_fopen(char *fname, char *mode) {
+	return __real_fopen(patch_fname(fname), mode);
+}
+
+int __wrap_open(const char *fname, int mode) {
+	return __real_open(patch_fname(fname), mode);
+}
+
+DIR *__wrap_opendir(const char *fname) {
+	return __real_opendir(patch_fname(fname));
+}
+#endif
+
 // g_grpNamePtr can ONLY point to a malloc'd block (length BMAX_PATH)
 char *g_grpNamePtr = NULL;
 
