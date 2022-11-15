@@ -49,16 +49,15 @@
 #  include <sys/sysctl.h> // for sysctl() to get path to executable
 #endif
 
-#if defined _3DS
-#include <3ds.h>
-#endif
-
-#ifdef VITA
-#include <vitasdk.h>
-unsigned int _newlib_heap_size_user = 192 * 1024 * 1024;
+#if defined(__AROS__) || defined(__AMIGA__) && !defined(__vita__)
+#  include <proto/exec.h> // AvailMem
+#  define DEVICES_TIMER_H
+#  include <proto/dos.h>
+#  include <sys/syslimits.h> // PATH_MAX
 #endif
 
 #include "compat.h"
+
 
 #ifndef __compat_h_macrodef__
 
@@ -333,16 +332,11 @@ char *Bgetenv(const char *name)
 	return getenv(name);
 }
 
-#define MAX_CURDIR_PATH 512
-static char cur_dir[MAX_CURDIR_PATH] = "ux0:data/jfsw/";
-
 char *Bgetcwd(char *buf, bsize_t size)
 {
-	if (buf != NULL) {
-        strncpy(buf, cur_dir, size);
-    }
-    return cur_dir;
+	return getcwd(buf,size);
 }
+
 #endif	// __compat_h_macrodef__
 
 
@@ -390,7 +384,9 @@ char *Bgethomedir(void)
 char *Bgetappdir(void)
 {
     char *dir = NULL;
-    
+#ifdef __vita__
+	dir = strdup("ux0:data/NBlood");
+#else
 #ifdef _WIN32
 	TCHAR appdir[MAX_PATH];
     
@@ -431,8 +427,13 @@ char *Bgetappdir(void)
         // on FreeBSD dirname() seems to use some internal buffer
         dir = strdup(dirname(buf));
     }
+#elif defined(__AMIGA__)
+    char buf[PATH_MAX] = {0};
+    if (NameFromLock(GetProgramDir(), buf, sizeof(buf))) {
+        dir = strdup(buf);
+    }
 #endif
-    
+#endif
     return dir;
 }
 
@@ -852,6 +853,9 @@ char *Bstrupr(char *s)
 //
 size_t Bgetsysmemsize(void)
 {
+#ifdef __vita__
+	return 0x7fffffff;
+#else
 #ifdef _WIN32
 	size_t siz = 0x7fffffff;
 	
@@ -862,7 +866,7 @@ size_t Bgetsysmemsize(void)
         }
 	
 	return siz;
-#elif ((defined(_SC_PAGE_SIZE) || defined(_SC_PAGESIZE)) && defined(_SC_PHYS_PAGES)) && !defined(VITA)
+#elif (defined(_SC_PAGE_SIZE) || defined(_SC_PAGESIZE)) && defined(_SC_PHYS_PAGES) && !defined(__AMIGA__)
 	size_t siz = 0x7fffffff;
 	long scpagesiz, scphyspages;
 
@@ -879,12 +883,11 @@ size_t Bgetsysmemsize(void)
 	//		scphyspages, scpagesiz, siz);
 
 	return siz;
-#elif defined(VITA)
-	return _newlib_heap_size_user;
-#elif defined _3DS
-    return (uint32_t)osGetMemRegionFree( MEMREGION_ALL );
+#elif defined(__AROS__) || defined(__AMIGA__)
+	return (size_t)AvailMem(MEMF_FAST|MEMF_TOTAL);
 #else
 	return 0x7fffffff;
+#endif
 #endif
 }
 

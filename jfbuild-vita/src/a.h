@@ -143,6 +143,60 @@ void __cdecl setupdrawslab(int,void *);
 void __cdecl drawslab(int,int,int,int,void *,void *);
 void __cdecl stretchhline(void *,int,int,int,void *,void *);
 
+#elif defined(__AMIGA__) && !defined(__vita__)
+
+#include <SDI_compiler.h>
+
+static inline void mmxoverlay(void) {} // not needed
+extern void sethlinesizes(REG(d0,int),REG(d1,int),REG(d2,void *));
+extern void setpalookupaddress(REG(d0,void *));
+static inline void setuphlineasm4(int bxinc, int byinc) {} // not needed
+extern void hlineasm4(REG(d0,int),REG(d1,int),REG(d2,int),REG(a0,int),REG(a1,int),REG(a2,void *));
+extern void setuprhlineasm4(REG(d0,int),REG(d1,int),REG(d2,int),REG(d3,void *),REG(d4,int),REG(d5,int));
+extern void rhlineasm4(REG(d0,int),REG(d1,void *),REG(d2,int),REG(d3,int),REG(d4,int),REG(d5,void *));
+extern void setuprmhlineasm4(REG(d0,int),REG(d1,int),REG(d2,int),REG(d3,void *),REG(d4,int),REG(d5,int));
+extern void rmhlineasm4(REG(d0,int),REG(d1,void *),REG(d2,int),REG(d3,int),REG(d4,int),REG(d5,void *));
+extern void setupqrhlineasm4(REG(d0,int),REG(d1,int),REG(d2,int),REG(d3,void *),REG(d4,int),REG(d5,int));
+extern void qrhlineasm4(REG(d0,int),REG(d1,void *),REG(d2,int),REG(d3,int),REG(d4,int),REG(d5,void *));
+extern void setvlinebpl(REG(d0,int));
+extern void fixtransluscence(REG(d0,void *));
+extern int prevlineasm1(REG(d0,int),REG(a0,void *),REG(d1,int),REG(d2,int),REG(a1,void *),REG(a2,void *));
+extern int vlineasm1(REG(d0,int),REG(a0,void *),REG(d1,int),REG(d2,int),REG(a1,void *),REG(a2,void *));
+extern void setuptvlineasm(REG(d0,int));
+extern int tvlineasm1(REG(d0,int),REG(a0,void *),REG(d1,int),REG(d2,int),REG(a1,void *),REG(a2,void *));
+extern void setuptvlineasm2(REG(d0,int),REG(d1,void *),REG(d2,void *));
+extern void tvlineasm2(REG(d0,int),REG(d1,int),REG(a0,void *),REG(a1,void *),REG(a2,int),REG(d2,void *));
+extern int mvlineasm1(REG(d0,int),REG(a0,void *),REG(d1,int),REG(d2,int),REG(a1,void *),REG(a2,void *));
+extern void setupvlineasm(REG(d0,int));
+extern void vlineasm4(REG(d0,int),REG(d1,void *));
+extern void setupmvlineasm(REG(d0,int));
+extern void mvlineasm4(REG(d0,int),REG(d1,void *));
+
+// these are not needed with asm
+static inline void setupspritevline(void *a,int b,int c,int d,int e,int f) {}
+static inline void spritevline(int a, int b, int c, int d, void *e, void *f) {}
+static inline void msetupspritevline(void *a,int b,int c,int d,int e,int f) {}
+static inline void mspritevline(int a,int b,int c,int d,void *e,void *f) {}
+
+extern void tsetupspritevline(REG(d0,void *),REG(d1,int),REG(d2,int),REG(d3,int),REG(d4,int),REG(d5,int));
+extern void tspritevline(REG(d0,int),REG(d1,int),REG(d2,int),REG(d3,int),REG(a0,void *),REG(a1,void *));
+extern void mhline(REG(d0,void *),REG(d1,int),REG(d2,int),REG(d3,int),REG(a0,int),REG(a1,void *));
+extern void mhlineskipmodify(REG(d0,int),REG(d1,int),REG(d2,int),REG(d3,int),REG(a0,void *),REG(a1,void *));
+extern void msethlineshift(REG(d0,int),REG(d1,int));
+extern void thline(REG(d0,void *),REG(d1,int),REG(d2,int),REG(d3,int),REG(a0,int),REG(a1,void *));
+extern void thlineskipmodify(REG(d0,int),REG(d1,int),REG(d2,int),REG(d3,int),REG(a0,void *),REG(a1,void *));
+extern void tsethlineshift(REG(d0,int),REG(d1,int));
+extern void setupslopevlin(REG(d0,int),REG(d1,void *),REG(d2,int));
+extern void slopevlin(REG(a0,void *),REG(a1,int),REG(a2,void *),REG(d0,int),REG(d1,int),REG(a4,int));
+extern void settransnormal(void);
+extern void settransreverse(void);
+
+extern void setupdrawslab(int dabpl, void *pal);
+extern void drawslab(REG(d0,int dx), REG(d1, unsigned int v), REG(d2, unsigned short dy), REG(d3, int vi), REG(a0, void *vptr), REG(a1, void *p));
+//static inline void setupdrawslab(int dabpl, void *pal) {} // TODO
+//static inline void drawslab(int dx, int v, int dy, int vi, void *vptr, void *p) {} // TODO
+static inline void stretchhline(void *p0, int u, int cnt, int uinc, void *rptr, void *p) {} // unused
+
 #else				// GCC || MSVC
 
 #define ENGINE_USING_A_C

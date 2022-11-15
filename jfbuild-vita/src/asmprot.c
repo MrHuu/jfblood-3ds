@@ -42,6 +42,10 @@ void makeasmwriteable(void)
         return;
     }
 
+#elif defined __AMIGA__
+
+// nothing to do here
+
 # else
 #  error Dont know how to unprotect the self-modifying assembly on this platform!
 # endif

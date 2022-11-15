@@ -174,6 +174,12 @@ void copybufreverse(void *S, void *D, int c)
 // Microsoft C Inline Assembler version
 //
 
+#elif defined(__AMIGA__) && !defined(__vita__)
+
+//
+// Amiga 68k C Inline Assembler version
+//
+
 #else				// _MSC_VER
 
 //

@@ -70,8 +70,13 @@ ifeq ($(PLATFORM),WINDOWS)
 	EXESUFFIX=.exe
 	BUILDLIBS+= -lmingwex -lwinmm -lws2_32 -lcomctl32 -lcomdlg32 -luxtheme -lxinput9_1_0
 else
-	RENDERTYPE=SDL
-	EXESUFFIX=
+	ifeq ($(PLATFORM),AMIGA)
+		RENDERTYPE=AMIGA
+		EXESUFFIX=$(AMISUFFIX)
+	else
+		RENDERTYPE=SDL
+		EXESUFFIX=
+	endif
 endif
 
 ifeq ($(RENDERTYPE),SDL)

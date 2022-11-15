@@ -1,10 +1,9 @@
 TARGET		:= jfblood
-TITLE		:= JONOFBLOD
+TITLE		:= JFBLOOD01
 GIT_VERSION := $(shell git describe --abbrev=6 --dirty --always --tags)
-SHADERS     := shaders
 
-LIBS = -lvitaGL -lvitashark -lmathneon -lvorbisfile -lvorbis -logg  -lspeexdsp -lmpg123 -lSceShaccCgExt \
-	-lSDL2 -lc -lSceCommonDialog_stub -lSceAudio_stub -lSceLibKernel_stub -lSceShaccCg_stub \
+LIBS = -lSDL2 -lvitaGL -lvitashark -lmathneon -lvorbisfile -lvorbis -logg  -lspeexdsp -lmpg123 -lSceShaccCgExt \
+	-lc -lSceCommonDialog_stub -lSceAudio_stub -lSceLibKernel_stub -lSceShaccCg_stub \
 	-ltaihen_stub -lSceNet_stub -lSceNetCtl_stub -lpng -lSceDisplay_stub -lSceGxm_stub -lSceHid_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceMotion_stub -lm -lSceAppMgr_stub \
 	-lSceAppUtil_stub -lScePgf_stub -ljpeg -lSceRtc_stub -lScePower_stub -lcurl -lssl -lcrypto -lz \
@@ -16,7 +15,7 @@ EINC=$(EROOT)/include
 ELIB=$(EROOT)
 
 #engine
-EROOT ?= jfbuild
+EROOT ?= jfbuild-vita
 ESRC ?= $(EROOT)/src
 
 MACTROOT ?= jfmact
@@ -36,11 +35,6 @@ JFBUILDOBJS = \
 	$(ESRC)/kplib.o \
 	$(ESRC)/osd.o \
 	$(ESRC)/polymost.o \
-	#$(ESRC)/glbuild.o \
-	#$(ESRC)/hightile.o \
-	#$(ESRC)/mdsprite.o \
-	#$(ESRC)/polymosttex.o \
-	#$(ESRC)/polymosttexcache.o \
 	$(ESRC)/pragmas.o \
 	$(ESRC)/scriptfile.o \
 	$(ESRC)/sdlayer2.o \
@@ -48,6 +42,11 @@ JFBUILDOBJS = \
 	$(ESRC)/smalltextfont.o \
 	$(ESRC)/mmulti_null.o \
 	$(ESRC)/version.o
+	#$(ESRC)/glbuild.o \
+	#$(ESRC)/hightile.o \
+	#$(ESRC)/mdsprite.o \
+	#$(ESRC)/polymosttex.o \
+	#$(ESRC)/polymosttexcache.o \
 	
 JFMACTOBJS = \
 	$(MACTROOT)/util_lib.o \
@@ -121,7 +120,6 @@ GAMEOBJS = \
 	$(SRC)/eventq.o \
 	$(SRC)/fire.o \
 	$(SRC)/fx.o \
-	$(SRC)/gamemenu.o \
 	$(SRC)/getopt.o \
 	$(SRC)/gfx.o \
 	$(SRC)/gib.o \
@@ -157,55 +155,44 @@ GAMEOBJS = \
 	$(SRC)/resource.o \
 	$(SRC)/tile.o \
 	$(SRC)/view.o \
-	$(SRC)/screen.o \
-	$(SMACKEROBJ) \
-	$(ENETOBJ)
+	$(SRC)/gamemenu.o \
+	$(SRC)/screen.o
+	#$(SMACKEROBJ) \
+	#$(ENETOBJ)
 
 OBJS     := $(GAMEOBJS) $(JFBUILDOBJS) $(JFAUDIOLIBOBJS) $(JFMACTOBJS)
 
 PREFIX  = arm-vita-eabi
 CC      = $(PREFIX)-gcc
-CXX      = $(PREFIX)-g++
-CFLAGS  = -fsigned-char -Wl,-q,--wrap,fopen,--wrap,opendir,--wrap,open,--wrap,access \
-	-O3 -g -fno-optimize-sibling-calls \
-	-ffast-math -mtune=cortex-a9 -mfpu=neon -DHAVE_VORBIS -Isrc -D__AMIGA__ \
-	-Ijfbuild/include -Ijfbuild/src -Ijfmact -Ijfaudiolib/include -DVITA -DHAVE_SDL \
-	-Wno-implicit-function-declaration -I$(VITASDK)/$(PREFIX)/include/SDL2
-	
-ifeq ($(WANTON),1)
-CFLAGS += -DWANTON
-endif
+CXX      = $(PREFIX)-g++ -fpermissive
+CFLAGS  = -Wl,-q,--wrap,fopen,--wrap,opendir,--wrap,open,--wrap,access,--wrap,stat \
+	-O2 -g -fno-optimize-sibling-calls -fno-unit-at-a-time \
+	-ffast-math -mtune=cortex-a9 -mfpu=neon -DHAVE_VORBIS -Isrc -D__AMIGA__ -DENGINE_19960925 \
+	-Ijfbuild-vita/include -Ijfbuild-vita/src -Ijfmact -Ijfaudiolib/include -DVITA -DHAVE_SDL \
+	-Wno-implicit-function-declaration -I$(VITASDK)/$(PREFIX)/include/SDL2 -DASS_REVERSESTEREO \
+	-DNETCODE_DISABLE -DSMACKER_DISABLE
 
 CXXFLAGS  = $(CFLAGS) -fno-exceptions -std=gnu++11
 ASFLAGS = $(CFLAGS)
 
-ifeq ($(WANTON),1)
-all: $(TARGET).bin
-
-$(TARGET).bin: $(TARGET).velf
-	vita-make-fself -c -s $< build/$(TARGET).bin
-else
 all: $(TARGET).vpk
 
 $(TARGET).vpk: $(TARGET).velf
 	vita-make-fself -c -s $< build/eboot.bin
-	vita-mksfoex -s TITLE_ID=$(TITLE) -d ATTRIBUTE2=12 "Shadow Warrior" param.sfo
+	vita-mksfoex -s TITLE_ID=$(TITLE) -d ATTRIBUTE2=12 "Blood" param.sfo
 	vita-pack-vpk -s param.sfo -b build/eboot.bin \
 		--add build/sce_sys/icon0.png=sce_sys/icon0.png \
-		--add build/sce_sys/livearea/contents/bg.png=sce_sys/livearea/contents/bg.png \
-		--add build/sce_sys/livearea/contents/startup.png=sce_sys/livearea/contents/startup.png \
-		--add build/sce_sys/livearea/contents/wanton.png=sce_sys/livearea/contents/wanton.png \
+		--add build/sce_sys/livearea/contents/bg0.png=sce_sys/livearea/contents/bg0.png \
+		--add build/sce_sys/livearea/contents/suffering.png=sce_sys/livearea/contents/suffering.png \
 		--add build/sce_sys/livearea/contents/template.xml=sce_sys/livearea/contents/template.xml \
-		--add build/jfblood.bin=jfblood.bin \
 		$(TARGET).vpk
-endif
 
 %.velf: %.elf
 	cp $< $<.unstripped.elf
 	$(PREFIX)-strip -g $<
 	vita-elf-create $< $@
 
-$(TARGET).elf: $(OBJS)
+$(TARGET).elf: $(OBJS) $(BUGGY_OBJS)
 	$(CXX) $(CXXFLAGS) $^ $(LIBS) -o $@
 
 clean:

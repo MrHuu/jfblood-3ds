@@ -1164,7 +1164,7 @@ static void ptm_uploadtexture(PTMHead * ptm, unsigned short flags, PTTexture * t
 	ptm_fixtransparency(tex, (flags & PTH_CLAMPED));
 
 	mipmap = 0;
-	/*if (! (flags & PTH_NOMIPLEVEL)) {
+	if (! (flags & PTH_NOMIPLEVEL)) {
 		// if we aren't instructed to preserve all mipmap levels,
 		// immediately throw away gltexmiplevel mipmaps
 		mipmap = max(0, gltexmiplevel);
@@ -1174,9 +1174,9 @@ static void ptm_uploadtexture(PTMHead * ptm, unsigned short flags, PTTexture * t
 		// throw away additional mipmaps until the texture fits within
 		// the maximum size permitted by the GL driver
 		mipmap++;
-	}*/
+	}
 
-	/*for ( ;
+	for ( ;
 	     mipmap > 0 && (tex->sizx > 1 || tex->sizy > 1);
 	     mipmap--) {
 		if (compress && tdef) {
@@ -1202,9 +1202,9 @@ static void ptm_uploadtexture(PTMHead * ptm, unsigned short flags, PTTexture * t
 
 		ptm_mipscale(tex);
 		ptm_fixtransparency(tex, (flags & PTH_CLAMPED));
-	}*/
+	}
 
-	/*if (compress) {
+	if (compress) {
 		comprsize = ptcompress_getstorage(tex->sizx, tex->sizy, compress);
 		comprdata = (unsigned char *) malloc(comprsize);
 
@@ -1233,13 +1233,13 @@ static void ptm_uploadtexture(PTMHead * ptm, unsigned short flags, PTTexture * t
 			// force each mipmap to be allocated afresh in the loop below
 			comprdata = 0;
 		}
-	} else */{
+	} else {
 		glfunc.glTexImage2D(GL_TEXTURE_2D, 0,
 			intexfmt, tex->sizx, tex->sizy, 0, tex->rawfmt,
 			GL_UNSIGNED_BYTE, (const GLvoid *) tex->pic);
 	}
 
-	/*for (mipmap = 1; tex->sizx > 1 || tex->sizy > 1; mipmap++) {
+	for (mipmap = 1; tex->sizx > 1 || tex->sizy > 1; mipmap++) {
 		ptm_mipscale(tex);
 		ptm_fixtransparency(tex, (flags & PTH_CLAMPED));
 
@@ -1279,7 +1279,7 @@ static void ptm_uploadtexture(PTMHead * ptm, unsigned short flags, PTTexture * t
 				intexfmt, tex->sizx, tex->sizy, 0, tex->rawfmt,
 				GL_UNSIGNED_BYTE, (const GLvoid *) tex->pic);
 		}
-	}*/
+	}
 
 	ptm->flags = 0;
 	ptm->flags |= (tex->hasalpha ? PTH_HASALPHA : 0);

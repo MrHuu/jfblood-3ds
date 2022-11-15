@@ -80,10 +80,6 @@ Low priority:
 # include "polymosttex_priv.h"
 # include "polymosttexcache.h"
 # include "mdsprite_priv.h"
-# include "polymost_vs.h"
-# include "polymost_fs.h"
-# include "polymostaux_vs.h"
-# include "polymostaux_fs.h"
 #endif
 extern char textfont[2048], smalltextfont[2048];
 
@@ -136,7 +132,7 @@ struct glfiltermodes glfiltermodes[numglfiltermodes] = {
 };
 
 int glanisotropy = 0;            // 0 = maximum supported by card
-int glusetexcompr = 0;
+int glusetexcompr = 1;
 int gltexcomprquality = 0;	// 0 = fast, 1 = slow and pretty, 2 = very slow and pretty
 int gltexfiltermode = 5;   // GL_LINEAR_MIPMAP_LINEAR
 int glusetexcache = 1;
@@ -149,7 +145,7 @@ int glpolygonmode = 0;     // 0:GL_FILL,1:GL_LINE,2:GL_POINT,3:clear+GL_FILL
 static GLuint texttexture = 0;
 static GLuint nulltexture = 0;
 
-//#define SHADERDEV 1
+#define SHADERDEV 1
 static struct {
 	GLuint vao;					// Vertex array object.
 	GLuint program;             // GLSL program object.
@@ -566,7 +562,7 @@ static GLuint polymost_load_shader(GLuint shadertype, const char *defaultsrc, co
 		fseek(shaderfh, 0, SEEK_SET);
 
 		fileshadersrc = (GLchar *)calloc(1, shadersrclen + 1);
-		fread(fileshadersrc, shadersrclen, 1, shaderfh);
+		shadersrclen = fread(fileshadersrc, 1, shadersrclen, shaderfh);
 
 		fclose(shaderfh);
 		shaderfh = NULL;
@@ -605,6 +601,12 @@ static void checkindexbuffer(unsigned int size)
 
 static void polymost_loadshaders(void)
 {
+	extern const char default_polymost_fs_glsl[];
+	extern const char default_polymost_vs_glsl[];
+
+	extern const char default_polymostaux_fs_glsl[];
+	extern const char default_polymostaux_vs_glsl[];
+
 	GLuint shader[2] = {0,0};
 
 	// General texture rendering shader.
@@ -618,16 +620,16 @@ static void polymost_loadshaders(void)
 	if (shader[0] && shader[1]) {
 		polymostglsl.program = glbuild_link_program(2, shader);
 	}
-	//if (shader[0]) glfunc.glDeleteShader(shader[0]);
-	//if (shader[1]) glfunc.glDeleteShader(shader[1]);
+	if (shader[0]) glfunc.glDeleteShader(shader[0]);
+	if (shader[1]) glfunc.glDeleteShader(shader[1]);
 
 	if (polymostglsl.program) {
 		polymostglsl.attrib_vertex       = polymost_get_attrib(polymostglsl.program, "a_vertex");
 		polymostglsl.attrib_texcoord     = polymost_get_attrib(polymostglsl.program, "a_texcoord");
 		polymostglsl.uniform_modelview   = polymost_get_uniform(polymostglsl.program, "u_modelview");
 		polymostglsl.uniform_projection  = polymost_get_uniform(polymostglsl.program, "u_projection");
-		//polymostglsl.uniform_texture     = polymost_get_uniform(polymostglsl.program, "u_texture");
-		//polymostglsl.uniform_glowtexture = polymost_get_uniform(polymostglsl.program, "u_glowtexture");
+		polymostglsl.uniform_texture     = polymost_get_uniform(polymostglsl.program, "u_texture");
+		polymostglsl.uniform_glowtexture = polymost_get_uniform(polymostglsl.program, "u_glowtexture");
 		polymostglsl.uniform_alphacut    = polymost_get_uniform(polymostglsl.program, "u_alphacut");
 		polymostglsl.uniform_colour      = polymost_get_uniform(polymostglsl.program, "u_colour");
 		polymostglsl.uniform_fogcolour   = polymost_get_uniform(polymostglsl.program, "u_fogcolour");
@@ -641,8 +643,8 @@ static void polymost_loadshaders(void)
 #endif
 
 		glfunc.glUseProgram(polymostglsl.program);
-		//glfunc.glUniform1i(polymostglsl.uniform_texture, 0);		//GL_TEXTURE0
-		//glfunc.glUniform1i(polymostglsl.uniform_glowtexture, 1);	//GL_TEXTURE1
+		glfunc.glUniform1i(polymostglsl.uniform_texture, 0);		//GL_TEXTURE0
+		glfunc.glUniform1i(polymostglsl.uniform_glowtexture, 1);	//GL_TEXTURE1
 
 		// Generate a buffer object for vertex/colour elements.
 		glfunc.glGenBuffers(1, &polymostglsl.elementbuffer);
@@ -669,14 +671,14 @@ static void polymost_loadshaders(void)
 	if (shader[0] && shader[1]) {
 		polymostauxglsl.program = glbuild_link_program(2, shader);
 	}
-	///if (shader[0]) glfunc.glDeleteShader(shader[0]);
-	//if (shader[1]) glfunc.glDeleteShader(shader[1]);
+	if (shader[0]) glfunc.glDeleteShader(shader[0]);
+	if (shader[1]) glfunc.glDeleteShader(shader[1]);
 
 	if (polymostauxglsl.program) {
 		polymostauxglsl.attrib_vertex    = polymost_get_attrib(polymostauxglsl.program, "a_vertex");
 		polymostauxglsl.attrib_texcoord  = polymost_get_attrib(polymostauxglsl.program, "a_texcoord");
 		polymostauxglsl.uniform_projection = polymost_get_uniform(polymostauxglsl.program, "u_projection");
-		//polymostauxglsl.uniform_texture  = polymost_get_uniform(polymostauxglsl.program, "u_texture");
+		polymostauxglsl.uniform_texture  = polymost_get_uniform(polymostauxglsl.program, "u_texture");
 		polymostauxglsl.uniform_colour   = polymost_get_uniform(polymostauxglsl.program, "u_colour");
 		polymostauxglsl.uniform_bgcolour = polymost_get_uniform(polymostauxglsl.program, "u_bgcolour");
 		polymostauxglsl.uniform_mode     = polymost_get_uniform(polymostauxglsl.program, "u_mode");
@@ -689,7 +691,7 @@ static void polymost_loadshaders(void)
 #endif
 
 		glfunc.glUseProgram(polymostauxglsl.program);
-		//glfunc.glUniform1i(polymostauxglsl.uniform_texture, 0);	//GL_TEXTURE0
+		glfunc.glUniform1i(polymostauxglsl.uniform_texture, 0);	//GL_TEXTURE0
 
 		// Generate a buffer object for vertex/colour elements and pre-allocate its memory.
 		glfunc.glGenBuffers(1, &polymostauxglsl.elementbuffer);
@@ -714,7 +716,7 @@ void polymost_glinit()
 
 	glfunc.glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 
-	//glfunc.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glfunc.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	if (glmultisample > 0 && glinfo.multisample) {
 #if (USE_OPENGL != USE_GLES2)
@@ -727,7 +729,7 @@ void polymost_glinit()
 	polymost_loadshaders();
 }
 
-void resizeglcheck ()
+void resizeglcheck (void)
 {
 	float m[4][4];
 
@@ -1006,8 +1008,7 @@ void drawpoly (double *dpx, double *dpy, int n, int method)
 	double ngvx = 0.0, ngvy = 0.0, ngvo = 0.0, dp, up, vp, rdp, du0 = 0.0, du1 = 0.0, dui, duj;
 	double ngdx2, ngux2, ngvx2;
 	double f, r, ox, oy, oz, ox2, oy2, oz2, dd[16], uu[16], vv[16], px[16], py[16], uoffs;
-	int i, j, k, x, y, z, nn, mini, maxi, tsizx, tsizy, tsizxm1 = 0, tsizym1 = 0, ltsizy = 0;
-	int64_t ix0, ix1;
+	int i, j, k, x, y, z, nn, ix0, ix1, mini, maxi, tsizx, tsizy, tsizxm1 = 0, tsizym1 = 0, ltsizy = 0;
 	int xx, yy, xi, d0, u0, v0, d1, u1, v1, xmodnice = 0, ymulnice = 0, dorot;
 	unsigned char dacol = 0, *walptr, *palptr = NULL, *vidp, *vide;
 
@@ -1238,8 +1239,8 @@ void drawpoly (double *dpx, double *dpy, int n, int method)
 			}
 
 			f = 1.0/(double)tsizx;
-			ix0 = (int64_t)floor(du0*f);
-			ix1 = (int64_t)floor(du1*f);
+			ix0 = (int)floor(du0*f);
+			ix1 = (int)floor(du1*f);
 			for(;ix0<=ix1;ix0++)
 			{
 				du0 = (double)((ix0  )*tsizx); // + uoffs;

@@ -460,6 +460,7 @@ static int defsparser(scriptfile *script)
 					lastvoxid = nextvoxid++;
 				}
 				break;
+#ifndef __AMIGA__
 			case T_DEFINEVOXELTILES:
 				{
 					int ftilenume, ltilenume, tilex;
@@ -490,6 +491,7 @@ static int defsparser(scriptfile *script)
 					}
 				}
 				break;
+#endif
 
 				// NEW (ENCOURAGED) DEFINITION SYNTAX
 			case T_MODEL:
@@ -733,6 +735,7 @@ static int defsparser(scriptfile *script)
 
 				}
 				break;
+#ifndef __AMIGA__
 			case T_VOXEL:
 				{
 					char *voxeltokptr = script->ltextptr;
@@ -777,6 +780,7 @@ static int defsparser(scriptfile *script)
 					lastvoxid = -1;
 				}
 				break;
+#endif
 			case T_SKYBOX:
 				{
 					char *skyboxtokptr = script->ltextptr;

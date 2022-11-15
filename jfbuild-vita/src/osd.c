@@ -108,6 +108,8 @@ static void _internal_drawosdchar(int x, int y, char ch, int shade, int pal)
 	char st[2] = { 0,0 };
 	int colour;
 
+	(void)pal;
+
 	st[0] = ch;
 
 	switch (shade) {
@@ -120,8 +122,13 @@ static void _internal_drawosdchar(int x, int y, char ch, int shade, int pal)
 
 static void _internal_drawosdstr(int x, int y, char *ch, int len, int shade, int pal)
 {
+#ifdef __AMIGA__
+	static
+#endif
 	char st[1024];
 	int colour;
+
+	(void)pal;
 
 	if (len>1023) len=1023;
 	memcpy(st,ch,len);
@@ -140,6 +147,8 @@ static void _internal_drawosdcursor(int x, int y, int type, int lastkeypress)
 	char st[2] = { '_',0 };
 	int colour;
 
+	(void)lastkeypress;
+
 	if (type) st[0] = '|';
 
 	printext256(4+(x<<3),4+(y<<3)+2, lightgrey, -1, st, 0);
@@ -157,6 +166,7 @@ static int _internal_getrowheight(int w)
 
 static void _internal_clearbackground(int cols, int rows)
 {
+	(void)cols; (void)rows;
 }
 
 static int _internal_gettime(void)
@@ -192,6 +202,8 @@ static int osdcmd_osdvars(const osdfuncparm_t *parm)
 static int osdcmd_listsymbols(const osdfuncparm_t *parm)
 {
 	symbol_t *i;
+
+	(void)parm;
 
 	OSD_Printf("Symbol listing:\n");
 	for (i=symbols; i!=NULL; i=i->next)
@@ -788,7 +800,11 @@ void OSD_ResizeDisplay(int w, int h)
 {
 	int newcols;
 	int newmaxlines;
+#ifdef __AMIGA__
+	char *newtext;
+#else
 	char newtext[TEXTSIZE];
+#endif
 	int i,j,k;
 
 	newcols = getcolumnwidth(w);
@@ -797,12 +813,20 @@ void OSD_ResizeDisplay(int w, int h)
 	j = min(newmaxlines, osdmaxlines);
 	k = min(newcols, osdcols);
 
+#ifdef __AMIGA__
+	newtext = (char *)Bmalloc(TEXTSIZE);
+	if (newtext) {
+#endif
 	memset(newtext, 0, TEXTSIZE);
 	for (i=0;i<j;i++) {
 		memcpy(newtext+newcols*i, osdtext+osdcols*i, k);
 	}
 
 	memcpy(osdtext, newtext, TEXTSIZE);
+#ifdef __AMIGA__
+	Bfree(newtext);
+	}
+#endif
 	osdcols = newcols;
 	osdmaxlines = newmaxlines;
 	osdmaxrows = getrowheight(h)-2;
@@ -892,6 +916,9 @@ static inline void linefeed(void)
 
 void OSD_Printf(const char *fmt, ...)
 {
+#ifdef __AMIGA__
+	static
+#endif
 	char tmpstr[1024];
 	va_list va;
 
@@ -1029,10 +1056,17 @@ static char *strtoken(char *s, char **ptrptr, int *restart)
 	return start;
 }
 
+#ifdef __AMIGA__
+#define MAXPARMS 256
+#else
 #define MAXPARMS 512
+#endif
 int OSD_Dispatch(const char *cmd)
 {
 	char *workbuf, *wp, *wtp, *state;
+#ifdef __AMIGA__
+	static
+#endif
 	char *parms[MAXPARMS];
 	int  numparms, restart = 0;
 	osdfuncparm_t ofp;

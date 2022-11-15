@@ -315,6 +315,318 @@ void stretchhline (void * UNUSED(p0), int u, int cnt, int uinc, void *rptr, void
 void mmxoverlay() { }
 
 #endif
+
+#if defined(__AMIGA__) && !defined(__vita__)
+static int bpl;
+static unsigned char *gpal;
+
+void setupdrawslab (int dabpl, void *pal)
+	{ bpl = dabpl; gpal = (unsigned char *)pal; }
+
+void drawslab(REG(d0,int dx), REG(d1, unsigned int v), REG(d2, unsigned short dy), REG(d3, int vi), REG(a0, void *vptr), REG(a1, void *p))
+{
+	short int x;
+	unsigned char *pp, *vpptr;
+	int stride;
+
+	pp = (unsigned char *)p;
+	vpptr = (unsigned char *)vptr;
+	stride = bpl - dx;
+	switch (dx)
+	{
+		case 1:
+			while (dy > 0)
+			{
+				*pp++ = gpal[(int)(*(vpptr+(v>>16)))];
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 2:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 3:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 4:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 5:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 6:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 7:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 8:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 9:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 10:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 11:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 12:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 13:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 14:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 15:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		case 16:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+		default:
+			while (dy > 0)
+			{
+				unsigned char col = gpal[(int)(*(vpptr+(v>>16)))];
+				for(x=0;x<dx;x++)
+					*pp++ = col;
+				pp += stride;
+				v += vi;
+				dy--;
+			}
+			break;
+	}
+}
+#endif
 /*
  * vim:ts=4:
  */

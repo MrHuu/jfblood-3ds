@@ -46,15 +46,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <dirent.h>
 
 #ifdef __vita__
+extern "C" {
 char patched_fname[512];
 char *patch_fname(char *fname) {
-	if (strstr(fname, "ux0")) {
-		char *s = strstr(fname, ".");
-		if (s)
-			fname = s;
-		else
-			return fname;
-	}
+	if (strstr(fname, "ux0"))
+		return fname;
 	
 	if (fname[0] == '.') {
 		char *s = strstr(fname, "/");
@@ -65,29 +61,48 @@ char *patch_fname(char *fname) {
 	}
 	
 	if (strstr(fname, "app0:")) {
-		sprintf(patched_fname, "ux0:data/NBlood%s", &fname[5]);
+		sprintf(patched_fname, "ux0:data/NBlood/%s", &fname[5]);
 	} else {
 		sprintf(patched_fname, "ux0:data/NBlood/%s", fname);
 	}
-
+	
+	//printf("patched fname: %s\n", patched_fname);
 	return patched_fname;
 }
 
+int __real_access(const char *fname, int mode);
+FILE *__real_fopen(char *fname, char *mode);
+int __real_open(const char *fname, int mode);
+DIR *__real_opendir(const char *fname);
+int __real_stat(const char *fname, struct stat *mode);
+
 int __wrap_access(const char *fname, int mode) {
+	//printf("access %s\n", fname);
 	return __real_access(patch_fname(fname), mode);
 }
 
 FILE *__wrap_fopen(char *fname, char *mode) {
+	//printf("fopen %s\n", fname);
 	return __real_fopen(patch_fname(fname), mode);
 }
 
 int __wrap_open(const char *fname, int mode) {
+	//printf("open %s\n", fname);
 	return __real_open(patch_fname(fname), mode);
 }
 
 DIR *__wrap_opendir(const char *fname) {
+	//printf("opendir %s\n", fname);
 	return __real_opendir(patch_fname(fname));
 }
+
+int __wrap_stat(const char *fname, struct stat *mode) {
+	//printf("stat %s\n", fname);
+	return __real_stat(patch_fname(fname), mode);
+}
+
+long sysconf(int name) { return 0; }
+};
 #endif
 
 // g_grpNamePtr can ONLY point to a malloc'd block (length BMAX_PATH)

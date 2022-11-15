@@ -40,6 +40,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "sound.h"
 #include "view.h"
 
+#ifdef __vita__
+#include <vitasdk.h>
+#endif
+
 void SaveGame(CGameMenuItemZEditBitmap *, CGameMenuEvent *);
 
 void SaveGameProcess(CGameMenuItemChain *);
@@ -2400,7 +2404,8 @@ void SetupJoystickAxisMenu(CGameMenuItemChain *pItem)
 {
     UNREFERENCED_PARAMETER(pItem);
     int k = 0;
-    for (int i = 0; i < nAnalogNum; ++i)
+
+	for (int i = 0; i < nAnalogNum; ++i)
     {
         if (JoystickAnalogueAxes[gJoystickAxis] == nAnalogValues[i])
         {
@@ -2599,6 +2604,11 @@ void SaveGame(CGameMenuItemZEditBitmap *pItem, CGameMenuEvent *event)
         return;
     }
     G_ModDirSnprintf(strSaveGameName, BMAX_PATH, "game00%02d.sav", nSlot);
+#ifdef __vita__
+    SceDateTime time;
+    sceRtcGetCurrentClockLocalTime(&time);
+    sprintf(strRestoreGameStrings[nSlot], "%d/%d %02d:%02d:%02d", time.day, time.month, time.hour, time.minute, time.second);
+#endif
     strcpy(gGameOptions.szUserGameName, strRestoreGameStrings[nSlot]);
     sprintf(gGameOptions.szSaveGameName, "%s", strSaveGameName);
     gGameOptions.nSaveGameSlot = nSlot;

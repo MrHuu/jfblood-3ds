@@ -38,10 +38,17 @@
 void *kmalloc(bsize_t size) { return(Bmalloc(size)); }
 void kfree(void *buffer) { Bfree(buffer); }
 
-void loadvoxel(int voxindex) { voxindex=0; }
+void loadvoxel(int voxindex) { (void)voxindex; }
+#ifndef __AMIGA__
 int tiletovox[MAXTILES];
 int usevoxels = 1;
+#endif
+#ifdef ENGINE_19960925
+void qloadvoxel(int32_t nVoxel);
+#define kloadvoxel qloadvoxel
+#else
 #define kloadvoxel loadvoxel
+#endif
 
 int novoxmips = 0;
 
@@ -52,11 +59,16 @@ int novoxmips = 0;
 #define MAXVOXMIPS 5
 intptr_t voxoff[MAXVOXELS][MAXVOXMIPS];
 unsigned char voxlock[MAXVOXELS][MAXVOXMIPS];
+#ifndef __AMIGA__
 int voxscale[MAXVOXELS];
+#endif
 
 static int ggxinc[MAXXSIZ+1], ggyinc[MAXXSIZ+1];
 static int lowrecip[1024], nytooclose, nytoofar;
 static unsigned int distrecip[65536];
+#ifdef __AMIGA__
+static int voxxdimen = -1;
+#endif
 
 static int *lookups = NULL;
 int dommxoverlay = 1, beforedrawrooms = 1;
@@ -90,6 +102,9 @@ int editorgridextent = 131072;
 
 static short radarang[1280], radarang2[MAXXDIM];
 static unsigned short sqrtable[4096], shlookup[4096+256];
+#ifdef ENGINE_19950829
+static unsigned short sqrtable_old[2048];
+#endif
 unsigned char pow2char[8] = {1,2,4,8,16,32,64,128};
 int pow2long[32] =
 {
@@ -365,6 +380,127 @@ static inline int getclipmask(int a, int b, int c, int d)
 		: "a" (__a), "b" (__b), "c" (__c), "d" (__d) : "cc"); \
 	 __a; })
 
+#elif defined(__AMIGA__) && !defined(__vita__)
+
+//
+// written by Dante/Oxyron
+//
+
+static inline int nsqrtasm(int eax)
+{
+	register int _eax asm("d0") = eax;
+	asm volatile (
+		"lea     _shlookup,a0" "\n\t"
+		"lea     _sqrtable,a1" "\n\t"
+		"moveq   #12,d3" "\n\t"
+		"moveq   #24,d4" "\n\t"
+		"move.l  d0,d2" "\n\t"
+		"move.l  d0,d1" "\n\t"
+		"and.l   #4278190080,d2" "\n\t"
+		"beq.b   1f" "\n\t"
+		"lsr.l   d4,d1" "\n\t"
+		"move.w  8192(a0,d1.l*2),d2" "\n\t"
+		"bra.b   2f" "\n\t"
+		"1:" "\n\t"
+		"lsr.l   d3,d1" "\n\t"
+		"move.w  (a0,d1.l*2),d2" "\n\t"
+		"2:" "\n\t"
+		"move.w  d2,d1" "\n\t"
+		"and.w   #31,d2" "\n\t"
+		"lsr.w   #8,d1" "\n\t"
+		"lsr.l   d2,d0" "\n\t"
+		"move.w  (a1,d0.l*2),d0" "\n\t"
+		"lsr.l   d1,d0"
+		: "=r" (_eax)
+		: "r" (_eax)
+		: "d1", "d2", "d3", "d4", "a0", "a1", "cc", "memory"
+	);
+	return _eax;
+}
+
+static inline int msqrtasm(int ecx)
+{
+	register int _ecx asm("d0") = ecx;
+	asm volatile (
+		"move.l  #1073741824,d1" "\n\t"
+		"move.l  #536870912,d2" "\n\t"
+		"1:" "\n\t" // begit
+		"cmp.l   d1,d0" "\n\t"
+		"blt.b   2f" "\n\t"
+		"sub.l   d1,d0" "\n\t"
+		"move.l  d2,d3" "\n\t"
+		"lsl.l   #2,d3" "\n\t"
+		"add.l   d3,d1" "\n\t"
+		"2:" "\n\t" // skip
+		"sub.l   d2,d1" "\n\t"
+		"lsr.l   #1,d1" "\n\t"
+		"lsr.l   #2,d2" "\n\t"
+		"bne.b   1b" "\n\t"
+		"cmp.l   d1,d0" "\n\t"
+		"bcs.b   3f" "\n\t"
+		"addq.l  #1,d1" "\n\t"
+		"3:" "\n\t" // fini
+		"lsr.l   #1,d1" "\n\t"
+		"move.l  d1,d0"
+		: "=r" (_ecx)
+		: "r" (_ecx)
+		: "d1", "d2", "d3", "a0", "cc", "memory"
+	);
+	return _ecx;
+}
+
+static inline int krecipasm(int eax)
+{
+	register int _eax asm("d0") = eax;
+	asm volatile (
+		"lea     _reciptable,a0" "\n\t"
+		"moveq   #10,d3" "\n\t"
+		"fmove.l d0,fp0" "\n\t"
+		"moveq   #23,d4" "\n\t"
+		"fmove.s fp0,d1" "\n\t"
+		"add.l   d0,d0" "\n\t"
+		"subx.l  d2,d2" "\n\t"
+		"move.l  d1,d0" "\n\t"
+		"and.l   #8384512,d0" "\n\t"
+		"sub.l   #1065353216,d1" "\n\t"
+		"lsr.l   d3,d0" "\n\t"
+		"lsr.l   d4,d1" "\n\t"
+		"move.l  (a0,d0.l),d0" "\n\t"
+		"lsr.l   d1,d0" "\n\t"
+		"eor.l   d2,d0"
+		: "=r" (_eax)
+		: "r" (_eax)
+		: "fp0", "d1", "d2", "d3", "d4", "a0", "cc", "memory"
+	);
+	return _eax;
+}
+
+static inline int getclipmask(int eax, int ebx, int ecx, int edx)
+{
+	register int _eax asm("d0") = eax;
+	register int _ebx asm("d1") = ebx;
+	register int _ecx asm("d2") = ecx;
+	register int _edx asm("d3") = edx;
+	asm volatile (
+		"and.l   #2147483648,d0" "\n\t"
+		"rol.l   #1,d0" "\n\t"
+		"add.l   d1,d1" "\n\t"
+		"addx.l  d0,d0" "\n\t"
+		"add.l   d2,d2" "\n\t"
+		"addx.l  d0,d0" "\n\t"
+		"add.l   d3,d3" "\n\t"
+		"addx.l  d0,d0" "\n\t"
+		"move.l  d0,d1" "\n\t"
+		"lsl.l   #4,d1" "\n\t"
+		"or.b    #240,d0" "\n\t"
+		"eor.l   d1,d0"
+		: "=r" (_eax), "=r" (_ebx), "=r" (_ecx), "=r" (_edx)
+		: "r" (_eax), "r" (_ebx), "r" (_ecx), "r" (_edx)
+		: "cc"
+	);
+	return _eax;
+}
+
 #else	// __GNUC__ && __i386__
 
 static inline unsigned int nsqrtasm(unsigned int a)
@@ -528,9 +664,10 @@ static int permhead = 0, permtail = 0;
 short numscans, numhits, numbunches;
 
 static short capturecount = 0;
-static char capturename[20], captureatnextpage = 0;
-static int screencapture_pcx(char *filename, char inverseit);
-static int screencapture_tga(char *filename, char inverseit);
+static char capturename[20] = "capt0000.xxx", captureatnextpage = 0;
+static int screencapture_pcx(char mode);
+static int screencapture_tga(char mode);
+static int screencapture_png(char mode);
 
 unsigned char vgapal16[4*256] =
 {
@@ -580,7 +717,12 @@ unsigned char palfadedelta = 0;
 //
 static inline int getpalookup(int davis, int dashade)
 {
+#ifdef ENGINE_19960925
+	int32_t qgetpalookup(int32_t a1, int32_t a2);
+	return qgetpalookup(davis, dashade);
+#else
 	return(min(max(dashade+(davis>>8),0),numpalookups-1));
+#endif
 }
 
 
@@ -1082,7 +1224,13 @@ static void prepwall(int z, walltype *wal)
 //
 int animateoffs(short tilenum, short fakevar)
 {
+#ifdef ENGINE_19960925
+	int qanimateoffs(int a1, int a2);
+	return qanimateoffs(tilenum, fakevar);
+#else
 	int i, k, offs;
+
+	(void)fakevar;
 
 	offs = 0;
 	i = (totalclocklock>>((picanm[tilenum]>>24)&15));
@@ -1105,6 +1253,7 @@ int animateoffs(short tilenum, short fakevar)
 		}
 	}
 	return(offs);
+#endif
 }
 
 
@@ -2226,6 +2375,8 @@ static void parascan(int dax1, int dax2, int sectnum, unsigned char dastat, int 
 	int j, k, l, m, n, x, z, wallnum, nextsectnum, globalhorizbak;
 	short *topptr, *botptr;
 
+	(void)dax1; (void)dax2;
+
 	sectnum = thesector[bunchfirst[bunch]]; sec = &sector[sectnum];
 
 	globalhorizbak = globalhoriz;
@@ -2760,13 +2911,17 @@ static void drawvox(int dasprx, int daspry, int dasprz, int dasprang,
 	if (!davoxptr && i > 0) { davoxptr = (unsigned char *)voxoff[daindex][0]; i = 0; }
 	if (!davoxptr) return;
 
+#ifndef __AMIGA__
 	if (voxscale[daindex] == 65536)
+#endif
 		{ daxscale <<= (i+8); dayscale <<= (i+8); }
+#ifndef __AMIGA__
 	else
 	{
 		daxscale = mulscale8(daxscale<<i,voxscale[daindex]);
 		dayscale = mulscale8(dayscale<<i,voxscale[daindex]);
 	}
+#endif
 
 	odayscale = dayscale;
 	daxscale = mulscale16(daxscale,xyaspect);
@@ -2980,6 +3135,7 @@ static void drawsprite(int snum)
 	cstat = tspr->cstat;
 
 	if ((cstat&48)==48) vtilenum = tilenum;	// if the game wants voxels, it gets voxels
+#ifndef __AMIGA__
 	else if ((cstat&48)!=48 && (usevoxels) && (tiletovox[tilenum] != -1)
 #if USE_POLYMOST && USE_OPENGL
 		 && (!(spriteext[tspr->owner].flags&SPREXT_NOTMD))
@@ -2988,6 +3144,7 @@ static void drawsprite(int snum)
 		vtilenum = tiletovox[tilenum];
 		cstat |= 48;
 	}
+#endif
 
 	if ((cstat&48) != 48)
 	{
@@ -3792,16 +3949,20 @@ static void drawsprite(int snum)
 
 		longptr = (int *)voxoff[vtilenum][0];
 
+#ifndef __AMIGA__
 		if (voxscale[vtilenum] == 65536)
+#endif
 		{
 			nxrepeat = (((int)tspr->xrepeat)<<16);
 			nyrepeat = (((int)tspr->yrepeat)<<16);
 		}
+#ifndef __AMIGA__
 		else
 		{
 			nxrepeat = ((int)tspr->xrepeat)*voxscale[vtilenum];
 			nyrepeat = ((int)tspr->yrepeat)*voxscale[vtilenum];
 		}
+#endif
 
 		if (!(cstat&128)) tspr->z -= mulscale22(B_LITTLE32(longptr[5]),nyrepeat);
 		yoff = (int)((signed char)((picanm[sprite[tspr->owner].picnum]>>16)&255))+((int)tspr->yoffset);
@@ -4837,6 +4998,33 @@ static void initksqrt(void)
 		shlookup[i] = (k<<1)+((10-k)<<8);
 		if (i < 256) shlookup[i+4096] = ((k+6)<<1)+((10-(k+6))<<8);
 	}
+
+#ifdef ENGINE_19950829
+    uint32_t root, num;
+    int32_t temp;
+    for(i=0;i<2048;i++)
+    {
+        root = 128;
+        num = i<<20;
+        do
+        {
+            temp = root;
+            root = (root+num/root)>>1;
+        } while((temp-root+1) > 2);
+        temp = root*root-num;
+        while (klabs((int32_t)(temp-2*root+1)) < klabs(temp))
+        {
+            temp += -(2*root)+1;
+            root--;
+        }
+        while (klabs((int32_t)(temp+2*root+1)) < klabs(temp))
+        {
+            temp += 2*root+1;
+            root++;
+        }
+        sqrtable_old[i] = root;
+    }
+#endif
 }
 
 
@@ -4871,7 +5059,20 @@ static void dosetaspect(void)
 			if (j != 0) j = mulscale16((int)radarang[k+1]-(int)radarang[k],j);
 			radarang2[i] = (short)(((int)radarang[k]+j)>>6);
 		}
+#ifdef __AMIGA__
+#ifndef ENGINE_19960925
+		if (!offscreenrendering)
+#endif
+		{
+			if (xdimen != voxxdimen)
+			{
+				voxxdimen = xdimen;
+				for(i=1;i<65536;i++) distrecip[i] = (int)((float)xdimen * 0x100000 / i);
+			}
+		}
+#else
 		for(i=1;i<65536;i++) distrecip[i] = divscale20(xdimen,i);
+#endif
 		nytooclose = xdimen*2100;
 		nytoofar = 65536*16384-1048576;
 	}
@@ -4898,6 +5099,46 @@ static int loadtables(void)
 	int i;
 
 	initksqrt();
+#ifdef __AMIGA__
+	int fil;
+	for(i=0;i<2048;i++) reciptable[i] = divscale30(2048L,i+2048);
+
+	if ((fil = kopen4load("tables.dat",0)) != -1)
+	{
+		for (i = 0; i < 2048; i++) {
+			kread(fil,&sintable[i],2);
+			sintable[i] = B_LITTLE16(sintable[i]);
+		}
+
+#ifdef ENGINE_19950829
+		// thanks to Ken for helping me to figure this out
+		klseek(fil,1024*4,BSEEK_CUR); // skip tantable
+		short radarangv6[160];
+		for (i = 0; i < 160; i++) {
+			kread(fil,&radarangv6[i],2);
+			radarangv6[i] = B_LITTLE16(radarangv6[i]);
+		}
+		for(i=0;i<640;i++)
+		{
+			int j = i-((1280-320)/2);
+			if (j < 0) j = 0;
+			radarang[i] = radarangv6[j];
+			radarang[1279-i] = -radarang[i];
+		}
+#else
+		for (i = 0; i < 640; i++) {
+			kread(fil,&radarang[i],2);
+			radarang[i] = B_LITTLE16(radarang[i]);
+			radarang[1279-i] = -radarang[i];
+		}
+#endif
+
+		kclose(fil);
+	} else {
+		engineerrstr = "Failed to load TABLES.DAT!";
+		return 1;
+	}
+#else
     for(i=0;i<2048;i++) {
         sintable[i] = (short)(16384*sin((double)i*3.14159265358979/1024));
         reciptable[i] = divscale30(2048L,i+2048);
@@ -4906,8 +5147,10 @@ static int loadtables(void)
         radarang[i] = (short)(atan(((double)i-639.5)/160)*64*1024/3.14159265358979);
         radarang[1279-i] = -radarang[i];
     }
+#endif
 	calcbritable();
 
+#ifndef __AMIGA__
     if (crc32once((unsigned char *)sintable, sizeof(sintable)) != 0xee1e7aba) {
         engineerrstr = "Calculation of sintable yielded unexpected results.";
         return 1;
@@ -4916,6 +5159,7 @@ static int loadtables(void)
         engineerrstr = "Calculation of radarang yielded unexpected results.";
         return 1;
     }
+#endif
 
 	return 0;
 }
@@ -4968,7 +5212,16 @@ static void initfastcolorlookup(int rscale, int gscale, int bscale)
 static int loadpalette(void)
 {
 	int fil = -1, flen, i;
+#ifdef ENGINE_19950829
+	// Auto-detect LameDuke. Its PALETTE.DAT doesn't have a 'numpalookups' 16-bit
+	// int after the base palette, but starts directly with the shade tables.
+	int lamedukep = 0;
+#endif
 
+#ifdef ENGINE_19960925
+	void qloadpalette();
+	qloadpalette();
+#else
 	if ((fil = kopen4load("palette.dat",0)) < 0) goto badpalette;
 	flen = kfilelength(fil);
 
@@ -4989,7 +5242,11 @@ static int loadpalette(void)
 		numpalookups = (flen - 32640 - 768) >> 8;
 		buildprintf("loadpalette: old format palette (%d shades)\n",
 			numpalookups);
+#ifdef ENGINE_19950829
+		lamedukep = 1;
+#else
 		goto badpalette;
+#endif
 	} else {
 		buildprintf("loadpalette: damaged palette\n");
 		goto badpalette;
@@ -5005,15 +5262,40 @@ static int loadpalette(void)
 		kclose(fil);
 		return 1;
 	}
+#endif
 
 	globalpalwritten = palookup[0]; globalpal = 0;
 	setpalookupaddress(globalpalwritten);
 
 	fixtransluscence(transluc);
 
+#ifndef ENGINE_19960925
 	kread(fil,palookup[globalpal],numpalookups<<8);
+#ifdef ENGINE_19950829
+	if (lamedukep)
+	{
+		int i, j;
+		for (i=0; i<255; i++)
+		{
+			// NOTE: LameDuke's table doesn't have the last row or column (i==255).
+
+			// Read the entries above and on the diagonal, if the table is
+			// thought as being row-major.
+			if (kread(fil, &transluc[256*i + i + 1], 255-i) != 255-i)
+				goto badpalette;
+
+			// Duplicate the entries below the diagonal.
+			for (j=i+1; j<256; j++)
+				transluc[256*j + i] = transluc[256*i + j];
+		}
+		for (i=0; i<256; i++)
+			transluc[256*i + i] = i;
+	}
+	else
+#endif
 	kread(fil,transluc,65536);
 	kclose(fil);
+#endif
 
 	initfastcolorlookup(30L,59L,11L);
 
@@ -5307,11 +5589,14 @@ static int raytrace(int x3, int y3, int *x4, int *y4)
 // Exported Engine Functions
 //
 
-#if !defined _WIN32 && defined DEBUGGINGAIDS
+#if !defined _WIN32 && defined DEBUGGINGAIDS && !defined __AMIGA__
 #include <signal.h>
 static void sighandler(int sig, siginfo_t *info, void *ctx)
 {
 	const char *s;
+
+	(void)ctx;
+
 	switch (sig) {
 		case SIGFPE:
 			switch (info->si_code) {
@@ -5363,8 +5648,10 @@ int preinitengine(void)
 	assert((intptr_t)&wall[1] - (intptr_t)&wall[0] == sizeof(walltype));
 	assert(sizeof(spritetype) == 44);
 	assert((intptr_t)&sprite[1] - (intptr_t)&sprite[0] == sizeof(spritetype));
+#ifndef __AMIGA__
 	assert(sizeof(spriteexttype) == 12);
 	assert((intptr_t)&spriteext[1] - (intptr_t)&spriteext[0] == sizeof(spriteexttype));
+#endif
 
 	if (initsystem()) exit(1);
 
@@ -5394,7 +5681,7 @@ int initengine(void)
 {
 	int i, j;
 
-#if !defined _WIN32 && defined DEBUGGINGAIDS
+#if !defined _WIN32 && defined DEBUGGINGAIDS && !defined __AMIGA__
 	struct sigaction sigact, oldact;
 	memset(&sigact, 0, sizeof(sigact));
 	sigact.sa_sigaction = sighandler;
@@ -5420,9 +5707,11 @@ int initengine(void)
 			voxoff[i][j] = 0L;
 			voxlock[i][j] = 200;
 		}
+#ifndef __AMIGA__
 	for(i=0;i<MAXTILES;i++)
 		tiletovox[i] = -1;
 	clearbuf(&voxscale[0],sizeof(voxscale)>>2,65536L);
+#endif
 
 #if USE_POLYMOST
 	polymost_initosdfuncs();
@@ -5447,7 +5736,7 @@ int initengine(void)
 	visibility = 512;
 	parallaxvisibility = 512;
 
-	captureformat = 0;
+	captureformat = 2;  // PNG
 
 	if (loadtables()) return 1;
 	if (loadpalette()) return 1;
@@ -5499,6 +5788,10 @@ void uninitengine(void)
 //
 void initspritelists(void)
 {
+#ifdef ENGINE_19960925
+	void qinitspritelists(void);
+	qinitspritelists();
+#else
 	int i;
 
 	for (i=0;i<MAXSECTORS;i++)     //Init doubly-linked sprite sector lists
@@ -5525,6 +5818,7 @@ void initspritelists(void)
 	}
 	prevspritestat[0] = -1;
 	nextspritestat[MAXSPRITES-1] = -1;
+#endif
 }
 
 
@@ -6061,14 +6355,14 @@ void drawmapview(int dax, int day, int zoome, short ang)
 			yspan = tilesizy[tilenum]; yrepeat = spr->yrepeat;
 
 			ox = ((xspan>>1)+xoff)*xrepeat; oy = ((yspan>>1)+yoff)*yrepeat;
-			x1 = spr->x + mulscale(sinang,ox,16) + mulscale(cosang,oy,16);
-			y1 = spr->y + mulscale(sinang,oy,16) - mulscale(cosang,ox,16);
+			x1 = spr->x + mulscale16(sinang,ox) + mulscale16(cosang,oy);
+			y1 = spr->y + mulscale16(sinang,oy) - mulscale16(cosang,ox);
 			l = xspan*xrepeat;
-			x2 = x1 - mulscale(sinang,l,16);
-			y2 = y1 + mulscale(cosang,l,16);
+			x2 = x1 - mulscale16(sinang,l);
+			y2 = y1 + mulscale16(cosang,l);
 			l = yspan*yrepeat;
-			k = -mulscale(cosang,l,16); x3 = x2+k; x4 = x1+k;
-			k = -mulscale(sinang,l,16); y3 = y2+k; y4 = y1+k;
+			k = -mulscale16(cosang,l); x3 = x2+k; x4 = x1+k;
+			k = -mulscale16(sinang,l); y3 = y2+k; y4 = y1+k;
 
 			xb1[0] = 1; xb1[1] = 2; xb1[2] = 3; xb1[3] = 0;
 			npoints = 4;
@@ -6171,6 +6465,10 @@ void drawmapview(int dax, int day, int zoome, short ang)
 int loadboard(char *filename, char fromwhere, int *daposx, int *daposy, int *daposz,
 			 short *daang, short *dacursectnum)
 {
+#ifdef ENGINE_19960925
+	int qloadboard(char *filename, char flags, int *daposx, int *daposy, int *daposz, short *daang, short *dacursectnum);
+	return qloadboard(filename, fromwhere, daposx, daposy, daposz, daang, dacursectnum);
+#else
 	short fil, i, numsprites;
 
 	i = strlen(filename)-1;
@@ -6277,6 +6575,7 @@ int loadboard(char *filename, char fromwhere, int *daposx, int *daposy, int *dap
 	guniqhudid = 0;
 
 	return(0);
+#endif
 }
 
 
@@ -7340,15 +7639,15 @@ int saveboard(char *filename, int *daposx, int *daposy, int *daposz,
 		mapversion = 8;
 	else
 		mapversion = 7;
-	tl = B_LITTLE32(mapversion);    Bwrite(fil,&tl,4);
+	tl = B_LITTLE32(mapversion);    if (Bwrite(fil,&tl,4) != 4) goto writeerror;
 
-	tl = B_LITTLE32(*daposx);       Bwrite(fil,&tl,4);
-	tl = B_LITTLE32(*daposy);       Bwrite(fil,&tl,4);
-	tl = B_LITTLE32(*daposz);       Bwrite(fil,&tl,4);
-	ts = B_LITTLE16(*daang);        Bwrite(fil,&ts,2);
-	ts = B_LITTLE16(*dacursectnum); Bwrite(fil,&ts,2);
+	tl = B_LITTLE32(*daposx);       if (Bwrite(fil,&tl,4) != 4) goto writeerror;
+	tl = B_LITTLE32(*daposy);       if (Bwrite(fil,&tl,4) != 4) goto writeerror;
+	tl = B_LITTLE32(*daposz);       if (Bwrite(fil,&tl,4) != 4) goto writeerror;
+	ts = B_LITTLE16(*daang);        if (Bwrite(fil,&ts,2) != 2) goto writeerror;
+	ts = B_LITTLE16(*dacursectnum); if (Bwrite(fil,&ts,2) != 2) goto writeerror;
 
-	ts = B_LITTLE16(numsectors);    Bwrite(fil,&ts,2);
+	ts = B_LITTLE16(numsectors);    if (Bwrite(fil,&ts,2) != 2) goto writeerror;
 	for (i=0; i<numsectors; i++) {
 		tsect = sector[i];
 		tsect.wallptr       = B_LITTLE16(tsect.wallptr);
@@ -7364,10 +7663,10 @@ int saveboard(char *filename, int *daposx, int *daposy, int *daposz,
 		tsect.lotag         = B_LITTLE16(tsect.lotag);
 		tsect.hitag         = B_LITTLE16(tsect.hitag);
 		tsect.extra         = B_LITTLE16(tsect.extra);
-		Bwrite(fil,&tsect,sizeof(sectortype));
+		if (Bwrite(fil,&tsect,sizeof(sectortype)) != sizeof(sectortype)) goto writeerror;
 	}
 
-	ts = B_LITTLE16(numwalls);      Bwrite(fil,&ts,2);
+	ts = B_LITTLE16(numwalls);      if (Bwrite(fil,&ts,2) != 2) goto writeerror;
 	for (i=0; i<numwalls; i++) {
 		twall = wall[i];
 		twall.x          = B_LITTLE32(twall.x);
@@ -7381,10 +7680,10 @@ int saveboard(char *filename, int *daposx, int *daposy, int *daposz,
 		twall.lotag      = B_LITTLE16(twall.lotag);
 		twall.hitag      = B_LITTLE16(twall.hitag);
 		twall.extra      = B_LITTLE16(twall.extra);
-		Bwrite(fil,&twall,sizeof(walltype));
+		if (Bwrite(fil,&twall,sizeof(walltype)) != sizeof(walltype)) goto writeerror;
 	}
 
-	ts = B_LITTLE16(numsprites);    Bwrite(fil,&ts,2);
+	ts = B_LITTLE16(numsprites);    if (Bwrite(fil,&ts,2) != 2) goto writeerror;
 
 	for(j=0;j<MAXSTATUS;j++)
 	{
@@ -7407,13 +7706,17 @@ int saveboard(char *filename, int *daposx, int *daposy, int *daposz,
 			tspri.lotag   = B_LITTLE16(tspri.lotag);
 			tspri.hitag   = B_LITTLE16(tspri.hitag);
 			tspri.extra   = B_LITTLE16(tspri.extra);
-			Bwrite(fil,&tspri,sizeof(spritetype));
+			if (Bwrite(fil,&tspri,sizeof(spritetype)) != sizeof(spritetype)) goto writeerror;
 			i = nextspritestat[i];
 		}
 	}
 
 	Bclose(fil);
 	return(0);
+
+writeerror:
+	Bclose(fil);
+	return(-1);
 }
 
 
@@ -7680,8 +7983,7 @@ void nextpage(void)
 #endif
 
 			if (captureatnextpage) {
-				if (captureformat == 0) screencapture_tga(capturename,captureatnextpage&1);
-				else screencapture_pcx(capturename,captureatnextpage&1);
+				screencapture(NULL, captureatnextpage);
 				captureatnextpage = 0;
 			}
 
@@ -7813,20 +8115,11 @@ int loadpics(char *filename, int askedsize)
 
 	//try dpmi_DETERMINEMAXREALALLOC!
 
-#ifdef _3DS
-        cachesize = 4 * 1024 * 1024;
-#elif defined(VITA)
-		cachesize = 16 * 1024 * 1024;
-#else
-
 	//cachesize = min((int)((Bgetsysmemsize()/100)*60),max(artsize,askedsize));
 	if (Bgetsysmemsize() <= (unsigned int)askedsize)
 		cachesize = (Bgetsysmemsize()/100)*60;
 	else
 		cachesize = askedsize;
-
-#endif
-
 	while ((pic = kmalloc(cachesize)) == NULL)
 	{
 		cachesize -= 65536L;
@@ -8086,11 +8379,20 @@ int inside(int x, int y, short sectnum)
 		if ((y1^y2) < 0)
 		{
 			x1 = wal->x-x; x2 = wall[wal->point2].x-x;
+#ifdef ENGINE_19950829
+			//cnt ^= (((x1^x2) < 0) ? (x1*y2<x2*y1)^(y1<y2) : (x1 >= 0));
+			if ((x1^x2) < 0) cnt ^= (x1*y2<x2*y1)^(y1<y2); else cnt ^= (x1 >= 0);
+#else
 			if ((x1^x2) >= 0) cnt ^= x1; else cnt ^= (x1*y2-x2*y1)^y2;
+#endif
 		}
 		wal++; i--;
 	} while (i);
+#ifdef ENGINE_19950829
+	return(cnt);
+#else
 	return(cnt>>31);
+#endif
 }
 
 
@@ -8115,7 +8417,19 @@ int getangle(int xvect, int yvect)
 //
 int ksqrt(int num)
 {
+#ifdef ENGINE_19950829
+	uint32_t shift = 0;
+	uint32_t n = klabs((int32_t)num);
+	while (n >= 2048)
+	{
+		n >>= 2;
+		++shift;
+	}
+	uint32_t const s = sqrtable_old[n];
+	return (s << shift) >> 10;
+#else
 	return(nsqrtasm(num));
+#endif
 }
 
 
@@ -8176,8 +8490,13 @@ int setspritez(short spritenum, int newx, int newy, int newz)
 //
 int insertsprite(short sectnum, short statnum)
 {
+#ifdef ENGINE_19960925
+	int qinsertsprite(short nSector, short nStat);
+	return qinsertsprite(sectnum, statnum);
+#else
 	insertspritestat(statnum);
 	return(insertspritesect(sectnum));
+#endif
 }
 
 
@@ -8186,8 +8505,13 @@ int insertsprite(short sectnum, short statnum)
 //
 int deletesprite(short spritenum)
 {
+#ifdef ENGINE_19960925
+	int qdeletesprite(short nSprite);
+	return qdeletesprite(spritenum);
+#else
 	deletespritestat(spritenum);
 	return(deletespritesect(spritenum));
+#endif
 }
 
 
@@ -8196,12 +8520,17 @@ int deletesprite(short spritenum)
 //
 int changespritesect(short spritenum, short newsectnum)
 {
+#ifdef ENGINE_19960925
+	int qchangespritesect(short nSprite, short nSector);
+	return qchangespritesect(spritenum, newsectnum);
+#else
 	if ((newsectnum < 0) || (newsectnum > MAXSECTORS)) return(-1);
 	if (sprite[spritenum].sectnum == newsectnum) return(0);
 	if (sprite[spritenum].sectnum == MAXSECTORS) return(-1);
 	if (deletespritesect(spritenum) < 0) return(-1);
 	insertspritesect(newsectnum);
 	return(0);
+#endif
 }
 
 
@@ -8210,12 +8539,17 @@ int changespritesect(short spritenum, short newsectnum)
 //
 int changespritestat(short spritenum, short newstatnum)
 {
+#ifdef ENGINE_19960925
+	int qchangespritestat(short nSprite, short nSector);
+	return qchangespritestat(spritenum, newstatnum);
+#else
 	if ((newstatnum < 0) || (newstatnum > MAXSTATUS)) return(-1);
 	if (sprite[spritenum].statnum == newstatnum) return(0);
 	if (sprite[spritenum].statnum == MAXSTATUS) return(-1);
 	if (deletespritestat(spritenum) < 0) return(-1);
 	insertspritestat(newstatnum);
 	return(0);
+#endif
 }
 
 
@@ -8292,6 +8626,42 @@ int nextsectorneighborz(short sectnum, int thez, short topbottom, short directio
 //
 int cansee(int x1, int y1, int z1, short sect1, int x2, int y2, int z2, short sect2)
 {
+#ifdef ENGINE_19950829
+    sectortype *sec, *nsec;
+    walltype *wal, *wal2;
+    int32_t intx, inty, intz, i, cnt, nexts, dasectnum, dacnt, danum;
+
+    if ((x1 == x2) && (y1 == y2) && (sect1 == sect2)) return 1;
+
+    clipsectorlist[0] = sect1; danum = 1;
+    for(dacnt=0;dacnt<danum;dacnt++)
+    {
+        dasectnum = clipsectorlist[dacnt]; sec = &sector[dasectnum];
+
+        for(cnt=sec->wallnum,wal=&wall[sec->wallptr];cnt>0;cnt--,wal++)
+        {
+            wal2 = &wall[wal->point2];
+            if (lintersect(x1,y1,z1,x2,y2,z2,wal->x,wal->y,wal2->x,wal2->y,&intx,&inty,&intz) != 0)
+            {
+                nexts = wal->nextsector; if (nexts < 0) return 0;
+
+                if (intz <= sec->ceilingz) return 0;
+                if (intz >= sec->floorz) return 0;
+                nsec = &sector[nexts];
+                if (intz <= nsec->ceilingz) return 0;
+                if (intz >= nsec->floorz) return 0;
+
+                for(i=danum-1;i>=0;i--)
+                    if (clipsectorlist[i] == nexts) break;
+                if (i < 0) clipsectorlist[danum++] = nexts;
+            }
+        }
+
+        if (clipsectorlist[dacnt] == sect2)
+            return 1;
+    }
+    return 0;
+#else
 	sectortype *sec;
 	walltype *wal, *wal2;
 	int i, cnt, nexts, x, y, z, cz, fz, dasectnum, dacnt, danum;
@@ -8334,6 +8704,7 @@ int cansee(int x1, int y1, int z1, short sect1, int x2, int y2, int z2, short se
 	}
 	for(i=danum-1;i>=0;i--) if (clipsectorlist[i] == sect2) return(1);
 	return(0);
+#endif
 }
 
 
@@ -8370,6 +8741,7 @@ int hitscan(int xs, int ys, int zs, short sectnum, int vx, int vy, int vz,
 	{
 		dasector = clipsectorlist[tempshortcnt]; sec = &sector[dasector];
 
+#ifndef ENGINE_19950829
 		x1 = 0x7fffffff;
 		if (sec->ceilingstat&2)
 		{
@@ -8447,6 +8819,7 @@ int hitscan(int xs, int ys, int zs, short sectnum, int vx, int vy, int vz,
 				*hitsect = dasector; *hitwall = -1; *hitsprite = -1;
 				*hitx = x1; *hity = y1; *hitz = z1;
 			}
+#endif
 
 		startwall = sec->wallptr; endwall = startwall + sec->wallnum;
 		for(z=startwall,wal=&wall[startwall];z<endwall;z++,wal++)
@@ -8457,6 +8830,49 @@ int hitscan(int xs, int ys, int zs, short sectnum, int vx, int vy, int vz,
 			if ((x1-xs)*(y2-ys) < (x2-xs)*(y1-ys)) continue;
 			if (rintersect(xs,ys,zs,vx,vy,vz,x1,y1,x2,y2,&intx,&inty,&intz) == 0) continue;
 
+#ifdef ENGINE_19950829
+			if (vz != 0)
+			{
+				if ((intz <= sec->ceilingz) || (intz >= sec->floorz))
+				{
+					if (klabs(intx-xs)+klabs(inty-ys) < klabs(*hitx-xs)+klabs(*hity-ys))
+					{
+						//x1,y1,z1 are temp variables
+						if (vz > 0) z1 = sec->floorz; else z1 = sec->ceilingz;
+						x1 = xs + scale(z1-zs,vx,vz);
+						y1 = ys + scale(z1-zs,vy,vz);
+						if (inside(x1,y1,dasector) == 1)
+						{
+							//hit_set(hit, dasector, -1, -1, x1, y1, z1);
+							*hitsect = dasector; *hitwall = -1; *hitsprite = -1;
+							*hitx = x1; *hity = y1; *hitz = z1;
+							continue;
+						}
+					}
+				}
+			}
+
+			nextsector = wal->nextsector;
+			if ((nextsector < 0) || (wal->cstat&dawalclipmask))
+			{
+				if ((klabs(intx-xs)+klabs(inty-ys) < klabs(*hitx-xs)+klabs(*hity-ys)))
+				{
+					*hitsect = dasector; *hitwall = z; *hitsprite = -1;
+					*hitx = intx; *hity = inty; *hitz = intz;
+				}
+				continue;
+			}
+
+			if (intz <= sector[nextsector].ceilingz || intz >= sector[nextsector].floorz)
+			{
+				if ((klabs(intx-xs)+klabs(inty-ys) < klabs(*hitx-xs)+klabs(*hity-ys)))
+				{
+					*hitsect = dasector; *hitwall = z; *hitsprite = -1;
+					*hitx = intx; *hity = inty; *hitz = intz;
+				}
+				continue;
+			}
+#else
 			if (klabs(intx-xs)+klabs(inty-ys) >= klabs((*hitx)-xs)+klabs((*hity)-ys)) continue;
 
 			nextsector = wal->nextsector;
@@ -8473,6 +8889,7 @@ int hitscan(int xs, int ys, int zs, short sectnum, int vx, int vy, int vz,
 				*hitx = intx; *hity = inty; *hitz = intz;
 				continue;
 			}
+#endif
 
 			for(zz=tempshortnum-1;zz>=0;zz--)
 				if (clipsectorlist[zz] == nextsector) break;
@@ -8850,7 +9267,11 @@ int clipmove (int *x, int *y, int *z, short *sectnum,
 	cy = (((*y)+goaly)>>1);
 		//Extra walldist for sprites on sector lines
 	gx = goalx-(*x); gy = goaly-(*y);
+#ifdef ENGINE_19950829
+	rad = ksqrt(gx*gx + gy*gy) + MAXCLIPDIST+walldist + 8;
+#else
 	rad = nsqrtasm(gx*gx + gy*gy) + MAXCLIPDIST+walldist + 8;
+#endif
 	xmin = cx-rad; ymin = cy-rad;
 	xmax = cx+rad; ymax = cy+rad;
 
@@ -8885,20 +9306,30 @@ int clipmove (int *x, int *y, int *z, short *sectnum,
 			if ((wal->nextsector < 0) || (wal->cstat&dawalclipmask)) clipyou = 1;
 			else if (editstatus == 0)
 			{
+#ifndef ENGINE_19950829
 				if (rintersect(*x,*y,0,gx,gy,0,x1,y1,x2,y2,&dax,&day,&daz) == 0)
+#endif
 					dax = *x, day = *y;
 				daz = getflorzofslope((short)dasect,dax,day);
 				daz2 = getflorzofslope(wal->nextsector,dax,day);
 
 				sec2 = &sector[wal->nextsector];
+#ifdef ENGINE_19950829
+				if (daz2 < daz)
+#else
 				if (daz2 < daz-(1<<8))
+#endif
 					if ((sec2->floorstat&1) == 0)
 						if ((*z) >= daz2-(flordist-1)) clipyou = 1;
 				if (clipyou == 0)
 				{
 					daz = getceilzofslope((short)dasect,dax,day);
 					daz2 = getceilzofslope(wal->nextsector,dax,day);
+#ifdef ENGINE_19950829
+					if (daz2 > daz)
+#else
 					if (daz2 > daz+(1<<8))
+#endif
 						if ((sec2->ceilingstat&1) == 0)
 							if ((*z) <= daz2+(ceildist-1)) clipyou = 1;
 				}
@@ -9064,7 +9495,11 @@ int clipmove (int *x, int *y, int *z, short *sectnum,
 			{
 				templong1 = (goalx-intx)*lx + (goaly-inty)*ly;
 
+#ifdef ENGINE_19950829
+				if (1)
+#else
 				if ((klabs(templong1)>>11) < templong2)
+#endif
 					i = divscale20(templong1,templong2);
 				else
 					i = 0;
@@ -9072,14 +9507,24 @@ int clipmove (int *x, int *y, int *z, short *sectnum,
 				goaly = mulscale20(ly,i)+inty;
 			}
 
+#ifdef ENGINE_19950829
+			templong1 = lx*(oxvect>>6)+ly*(oyvect>>6);
+#else
 			templong1 = dmulscale6(lx,oxvect,ly,oyvect);
+#endif
 			for(i=cnt+1;i<=clipmoveboxtracenum;i++)
 			{
 				j = hitwalls[i];
+#ifdef ENGINE_19950829
+				templong2 = (clipit[j].x2-clipit[j].x1)*(oxvect>>6)+(clipit[j].y2-clipit[j].y1)*(oyvect>>6);
+#else
 				templong2 = dmulscale6(clipit[j].x2-clipit[j].x1,oxvect,clipit[j].y2-clipit[j].y1,oyvect);
+#endif
 				if ((templong1^templong2) < 0)
 				{
+#if !defined ENGINE_19950829 && !defined ENGINE_19960925
 					updatesector(*x,*y,sectnum);
+#endif
 					return(retval);
 				}
 			}
@@ -9108,9 +9553,11 @@ int clipmove (int *x, int *y, int *z, short *sectnum,
 	for(j=numsectors-1;j>=0;j--)
 		if (inside(*x,*y,j) == 1)
 		{
+#ifndef ENGINE_19950829
 			if (sector[j].ceilingstat&2)
 				templong2 = (getceilzofslope((short)j,*x,*y)-(*z));
 			else
+#endif
 				templong2 = (sector[j].ceilingz-(*z));
 
 			if (templong2 > 0)
@@ -9120,9 +9567,11 @@ int clipmove (int *x, int *y, int *z, short *sectnum,
 			}
 			else
 			{
+#ifndef ENGINE_19950829
 				if (sector[j].floorstat&2)
 					templong2 = ((*z)-getflorzofslope((short)j,*x,*y));
 				else
+#endif
 					templong2 = ((*z)-sector[j].floorz);
 
 				if (templong2 <= 0)
@@ -9218,7 +9667,10 @@ int pushmove (int *x, int *y, int *z, short *sectnum,
 					{
 						sec2 = &sector[wal->nextsector];
 
-
+#ifdef ENGINE_19950829
+						dax = *x;
+						day = *y;
+#else
 							//Find closest point on wall (dax, day) to (*x, *y)
 						dax = wall[wal->point2].x-wal->x;
 						day = wall[wal->point2].y-wal->y;
@@ -9232,16 +9684,25 @@ int pushmove (int *x, int *y, int *z, short *sectnum,
 						}
 						dax = wal->x + mulscale30(dax,t);
 						day = wal->y + mulscale30(day,t);
+#endif
 
 
 						daz = getflorzofslope(clipsectorlist[clipsectcnt],dax,day);
 						daz2 = getflorzofslope(wal->nextsector,dax,day);
+#ifdef ENGINE_19950829
+						if ((daz2 < daz) && ((sec2->floorstat&1) == 0))
+#else
 						if ((daz2 < daz-(1<<8)) && ((sec2->floorstat&1) == 0))
+#endif
 							if (*z >= daz2-(flordist-1)) j = 1;
 
 						daz = getceilzofslope(clipsectorlist[clipsectcnt],dax,day);
 						daz2 = getceilzofslope(wal->nextsector,dax,day);
+#ifdef ENGINE_19950829
+						if ((daz2 > daz) && ((sec2->ceilingstat&1) == 0))
+#else
 						if ((daz2 > daz+(1<<8)) && ((sec2->ceilingstat&1) == 0))
+#endif
 							if (*z <= daz2+(ceildist-1)) j = 1;
 					}
 					if (j != 0)
@@ -9418,7 +9879,12 @@ void getzrange(int x, int y, int z, short sectnum,
 	xmin = x-i; ymin = y-i;
 	xmax = x+i; ymax = y+i;
 
+#ifdef ENGINE_19950829
+	*ceilz = getceilzofslope(sectnum,x,y);
+	*florz = getflorzofslope(sectnum,x,y);
+#else
 	getzsofslope(sectnum,x,y,ceilz,florz);
+#endif
 	*ceilhit = sectnum+16384; *florhit = sectnum+16384;
 
 	dawalclipmask = (cliptype&65535);
@@ -9470,7 +9936,12 @@ void getzrange(int x, int y, int z, short sectnum,
 				if (dax >= day) continue;
 
 					//It actually got here, through all the continue's!!!
+#ifdef ENGINE_19950829
+				daz  = getceilzofslope(k,x,y);
+				daz2 = getflorzofslope(k,x,y);
+#else
 				getzsofslope((short)k,x,y,&daz,&daz2);
+#endif
 				if (daz > *ceilz) { *ceilz = daz; *ceilhit = k+16384; }
 				if (daz2 < *florz) { *florz = daz2; *florhit = k+16384; }
 			}
@@ -9595,7 +10066,11 @@ void setview(int x1, int y1, int x2, int y2)
 	int i;
 	float xfov;
 
+#ifdef __AMIGA__
+	xfov = widescreen ? ((float)xdim / (float)ydim) / (4.f / 3.f) : 1.f;
+#else
 	xfov = ((float)xdim / (float)ydim) / (4.f / 3.f);
+#endif
 
 	windowx1 = x1; wx1 = (x1<<12);
 	windowy1 = y1; wy1 = (y1<<12);
@@ -9831,8 +10306,12 @@ void setbrightness(int dabrightness, unsigned char *dapal, char noapply)
 	if (!(noapply&4))
 		curbrightness = min(max((int)dabrightness,0),15);
 
+#ifdef __AMIGA__
+	j = curbrightness;
+#else
 	curgamma = 1.0 + ((float)curbrightness / 10.0);
 	if (setgamma(curgamma)) j = curbrightness; else j = 0;
+#endif
 
 	for(k=i=0;i<256;i++)
 	{
@@ -10126,6 +10605,8 @@ void preparemirror(int dax, int day, int daz, short daang, int dahoriz, short da
 {
 	int i, j, x, y, dx, dy;
 
+	(void)daz; (void)dahoriz; (void)dasector;
+
 	x = wall[dawall].x; dx = wall[wall[dawall].point2].x-x;
 	y = wall[dawall].y; dy = wall[wall[dawall].point2].y-y;
 	j = dx*dx + dy*dy; if (j == 0) return;
@@ -10204,9 +10685,16 @@ int getceilzofslope(short sectnum, int dax, int day)
 	if (!(sector[sectnum].ceilingstat&2)) return(sector[sectnum].ceilingz);
 	wal = &wall[sector[sectnum].wallptr];
 	dx = wall[wal->point2].x-wal->x; dy = wall[wal->point2].y-wal->y;
+#ifdef ENGINE_19950829
+	i = (ksqrt(dx*dx+dy*dy)); if (i == 0) return(sector[sectnum].ceilingz);
+	i = divscale15(sector[sectnum].ceilingheinum,i);
+	dx *= i; dy *= i;
+	return(sector[sectnum].ceilingz+dmulscale23(dx,day-wal->y,-dy,dax-wal->x));
+#else
 	i = (nsqrtasm(dx*dx+dy*dy)<<5); if (i == 0) return(sector[sectnum].ceilingz);
 	j = dmulscale3(dx,day-wal->y,-dy,dax-wal->x);
 	return(sector[sectnum].ceilingz+scale(sector[sectnum].ceilingheinum,j,i));
+#endif
 }
 
 
@@ -10221,9 +10709,16 @@ int getflorzofslope(short sectnum, int dax, int day)
 	if (!(sector[sectnum].floorstat&2)) return(sector[sectnum].floorz);
 	wal = &wall[sector[sectnum].wallptr];
 	dx = wall[wal->point2].x-wal->x; dy = wall[wal->point2].y-wal->y;
+#ifdef ENGINE_19950829
+	i = (ksqrt(dx*dx+dy*dy)); if (i == 0) return(sector[sectnum].floorz);
+	i = divscale15(sector[sectnum].floorheinum,i);
+	dx *= i; dy *= i;
+	return(sector[sectnum].floorz+dmulscale23(dx,day-wal->y,-dy,dax-wal->x));
+#else
 	i = (nsqrtasm(dx*dx+dy*dy)<<5); if (i == 0) return(sector[sectnum].floorz);
 	j = dmulscale3(dx,day-wal->y,-dy,dax-wal->x);
 	return(sector[sectnum].floorz+scale(sector[sectnum].floorheinum,j,i));
+#endif
 }
 
 
@@ -10773,6 +11268,8 @@ void draw2dgrid(int posxe, int posye, short ange, int zoome, short gride)
 {
 	int i, xp1, yp1, xp2=0, yp2, tempy;
 
+	(void)ange;
+
 	if (gride > 0)
 	{
 		begindrawing();	//{{{
@@ -11136,37 +11633,121 @@ void printext256(int xpos, int ypos, short col, short backcol, const char *name,
 //
 // screencapture
 //
-static int screencapture_tga(char *filename, char inverseit)
+static BFILE *screencapture_openfile(const char *ext)
 {
-	int i,j;
-	unsigned char *ptr, head[18] = { 0,1,1,0,0,0,1,24,0,0,0,0,0/*wlo*/,0/*whi*/,0/*hlo*/,0/*hhi*/,8,0 };
-	//char palette[4*256];
-	char *fn = Bstrdup(filename), *inversebuf, c;
+	int i;
 	BFILE *fil;
 
 	do {	// JBF 2004022: So we don't overwrite existing screenshots
-        if (capturecount > 9999) {
-            Bfree(fn);
-            return -1;
-        }
+		if (capturecount > 9999) {
+			return NULL;
+		}
 
-		i = Bstrrchr(fn,'.')-fn-4;
-		fn[i++] = ((capturecount/1000)%10)+48;
-		fn[i++] = ((capturecount/100)%10)+48;
-		fn[i++] = ((capturecount/10)%10)+48;
-		fn[i++] = (capturecount%10)+48;
+		i = Bstrrchr(capturename,'.')-capturename-4;
+		capturename[i++] = ((capturecount/1000)%10)+48;
+		capturename[i++] = ((capturecount/100)%10)+48;
+		capturename[i++] = ((capturecount/10)%10)+48;
+		capturename[i++] = (capturecount%10)+48;
 		i++;
-		fn[i++] = 't';
-		fn[i++] = 'g';
-		fn[i++] = 'a';
+		capturename[i++] = ext[0];
+		capturename[i++] = ext[1];
+		capturename[i++] = ext[2];
 
-		if ((fil = Bfopen(fn,"rb")) == NULL) break;
+		if ((fil = Bfopen(capturename, "rb")) == NULL) break;
 		Bfclose(fil);
 		capturecount++;
 	} while (1);
-	fil = Bfopen(fn,"wb");
-	if (fil == NULL) {
-		Bfree(fn);
+	fil = Bfopen(capturename, "wb");
+	if (fil) capturecount++;
+	return fil;
+}
+
+static int screencapture_writeframe(BFILE *fil, char mode, void *v,
+	void (*writeline)(unsigned char *, int, int, BFILE *, void *))
+{
+	int y, ystart, yend, yinc, j;
+	unsigned char *ptr, *buf;
+	char inverseit = 0, bottotop = 0, bgr = 0;
+
+	inverseit = (mode & 1);
+	bottotop = (mode & 2);
+	bgr = (mode & 4);
+
+#if USE_POLYMOST && USE_OPENGL
+	if (rendmode >= 3 && qsetmode == 200) {
+		// OpenGL returns bottom-to-top ordered lines.
+		if (bottotop) {
+			ystart = 0;
+			yend = ydim;
+			yinc = 1;
+		} else {
+			ystart = ydim-1;
+			yend = -1;
+			yinc = -1;
+		}
+		buf = kmalloc(xdim*ydim*3);
+		if (buf) {
+			glfunc.glReadPixels(0,0,xdim,ydim,GL_RGB,GL_UNSIGNED_BYTE,buf);
+			if (bgr) {
+				for (j=(xdim*ydim-1)*3; j>=0; j-=3) {
+					swapchar(&buf[j+0], &buf[j+2]);
+				}
+			}
+			for (y = ystart; y != yend; y += yinc) {
+				ptr = buf + y*xdim*3;
+				writeline(ptr, xdim, 3, fil, v);
+			}
+			kfree(buf);
+		}
+		return(0);
+	}
+#endif
+
+	begindrawing();	//{{{
+	ptr = (unsigned char *)frameplace;
+	if (bottotop) {
+		ystart = ydim-1;
+		yend = -1;
+		yinc = -1;
+	} else {
+		ystart = 0;
+		yend = ydim;
+		yinc = 1;
+	}
+
+	if (inverseit && qsetmode != 200) {
+		buf = kmalloc(bytesperline);
+		if (buf) {
+			for (y = ystart; y != yend; y += yinc) {
+				copybuf(ptr + y*bytesperline, buf, xdim >> 2);
+				for (j=(bytesperline>>2)-1; j>=0; j--) ((int *)buf)[j] ^= 0x0f0f0f0fL;
+				writeline(buf, xdim, 1, fil, v);
+			}
+			kfree(buf);
+		}
+	} else {
+		for (y = ystart; y != yend; y += yinc) {
+			writeline(ptr + y*bytesperline, xdim, 1, fil, v);
+		}
+	}
+
+	enddrawing();	//}}}
+	return(0);
+}
+
+static void screencapture_writetgaline(unsigned char *buf, int bytes, int elements, BFILE *fp, void *v)
+{
+	(void)v;
+	Bfwrite(buf, bytes, elements, fp);
+}
+
+static int screencapture_tga(char mode)
+{
+	int i,j;
+	unsigned char *ptr, head[18] = { 0,1,1,0,0,0,1,24,0,0,0,0,0/*wlo*/,0/*whi*/,0/*hlo*/,0/*hhi*/,8,0 };
+	BFILE *fil;
+
+	if ((fil = screencapture_openfile("tga")) == NULL) {
 		return -1;
 	}
 
@@ -11190,14 +11771,10 @@ static int screencapture_tga(char *filename, char inverseit)
 
 	Bfwrite(head, 18, 1, fil);
 
-	begindrawing();	//{{{
-	ptr = (unsigned char *)frameplace;
-
 	// palette first
 #if USE_POLYMOST && USE_OPENGL
 	if (rendmode < 3 || (rendmode == 3 && qsetmode != 200)) {
 #endif
-		//getpalette(0,256,palette);
 		for (i=0; i<256; i++) {
 			Bfputc(curpalettefaded[i].b, fil);	// b
 			Bfputc(curpalettefaded[i].g, fil);	// g
@@ -11207,48 +11784,11 @@ static int screencapture_tga(char *filename, char inverseit)
 	}
 #endif
 
-	// targa renders bottom to top, from left to right
-	if (inverseit && qsetmode != 200) {
-		inversebuf = kmalloc(bytesperline);
-		if (inversebuf) {
-			for (i=ydim-1; i>=0; i--) {
-				copybuf(ptr+i*bytesperline, inversebuf, xdim >> 2);
-				for (j=0; j < (bytesperline>>2); j++) ((int *)inversebuf)[j] ^= 0x0f0f0f0fL;
-				Bfwrite(inversebuf, xdim, 1, fil);
-			}
-			kfree(inversebuf);
-		}
-	} else {
-#if USE_POLYMOST && USE_OPENGL
-		if (rendmode >= 3 && qsetmode == 200) {
-			// 24bit
-			inversebuf = kmalloc(xdim*ydim*3);
-			if (inversebuf) {
-				glfunc.glReadPixels(0,0,xdim,ydim,GL_RGB,GL_UNSIGNED_BYTE,inversebuf);
-				j = xdim*ydim*3;
-				for (i=0; i<j; i+=3) {
-					c = inversebuf[i];
-					inversebuf[i] = inversebuf[i+2];
-					inversebuf[i+2] = c;
-				}
-				Bfwrite(inversebuf, xdim*ydim, 3, fil);
-				kfree(inversebuf);
-			}
-		} else {
-#endif
-			for (i=ydim-1; i>=0; i--)
-				Bfwrite(ptr+i*bytesperline, xdim, 1, fil);
-#if USE_POLYMOST && USE_OPENGL
-		}
-#endif
-	}
-
-	enddrawing();	//}}}
+	// Targa renders bottom to top, from left to right.
+	// 24bit images use BGR element order.
+	screencapture_writeframe(fil, (mode&1) | 2 | 4, NULL, screencapture_writetgaline);
 
 	Bfclose(fil);
-	buildprintf("Saved screenshot to %s\n", fn);
-	Bfree(fn);
-	capturecount++;
 	return(0);
 }
 
@@ -11282,51 +11822,40 @@ static void writepcxline(unsigned char *buf, int bytes, int step, BFILE *fp)
 			runCount++;
 			if (runCount == 63) {
 				writepcxbyte(last, runCount, fp);
-        	                runCount = 0;
-                	}
-	        } else {
+				runCount = 0;
+			}
+		} else {
 			if (runCount)
 				writepcxbyte(last, runCount, fp);
 
-                	last = ths;
+			last = ths;
 			runCount = 1;
-                }
-        }
+		}
+	}
 
 	if (runCount) writepcxbyte(last, runCount, fp);
 	if (bytes&1) writepcxbyte(0, 1, fp);
 }
 
-static int screencapture_pcx(char *filename, char inverseit)
+static void screencapture_writepcxline(unsigned char *buf, int bytes, int elements, BFILE *fp, void *v)
+{
+	(void)v;
+	if (elements == 3) {
+		writepcxline(buf,   bytes, 3, fp);
+		writepcxline(buf+1, bytes, 3, fp);
+		writepcxline(buf+2, bytes, 3, fp);
+		return;
+	}
+	writepcxline(buf, bytes, 1, fp);
+}
+
+static int screencapture_pcx(char mode)
 {
 	int i,j,bpl;
-	unsigned char *ptr, head[128], *inversebuf;
-	char *fn = Bstrdup(filename);
+	unsigned char *ptr, head[128];
 	BFILE *fil;
 
-	do {	// JBF 2004022: So we don't overwrite existing screenshots
-        if (capturecount > 9999) {
-            Bfree(fn);
-            return -1;
-        }
-
-		i = Bstrrchr(fn,'.')-fn-4;
-		fn[i++] = ((capturecount/1000)%10)+48;
-		fn[i++] = ((capturecount/100)%10)+48;
-		fn[i++] = ((capturecount/10)%10)+48;
-		fn[i++] = (capturecount%10)+48;
-		i++;
-		fn[i++] = 'p';
-		fn[i++] = 'c';
-		fn[i++] = 'x';
-
-		if ((fil = Bfopen(fn,"rb")) == NULL) break;
-		Bfclose(fil);
-		capturecount++;
-	} while (1);
-	fil = Bfopen(fn,"wb");
-	if (fil == NULL) {
-		Bfree(fn);
+	if ((fil = screencapture_openfile("pcx")) == NULL) {
 		return -1;
 	}
 
@@ -11358,44 +11887,9 @@ static int screencapture_pcx(char *filename, char inverseit)
 
 	Bfwrite(head, 128, 1, fil);
 
-	begindrawing();	//{{{
-	ptr = (unsigned char *)frameplace;
-
-	// targa renders bottom to top, from left to right
-	if (inverseit && qsetmode != 200) {
-		inversebuf = kmalloc(bytesperline);
-		if (inversebuf) {
-			for (i=0; i<ydim; i++) {
-				copybuf(ptr+i*bytesperline, inversebuf, xdim >> 2);
-				for (j=0; j < (bytesperline>>2); j++) ((int *)inversebuf)[j] ^= 0x0f0f0f0fL;
-				writepcxline(inversebuf, xdim, 1, fil);
-			}
-			kfree(inversebuf);
-		}
-	} else {
-#if USE_POLYMOST && USE_OPENGL
-		if (rendmode >= 3 && qsetmode == 200) {
-			// 24bit
-			inversebuf = kmalloc(xdim*ydim*3);
-			if (inversebuf) {
-				glfunc.glReadPixels(0,0,xdim,ydim,GL_RGB,GL_UNSIGNED_BYTE,inversebuf);
-				for (i=ydim-1; i>=0; i--) {
-					writepcxline(inversebuf+i*xdim*3,   xdim, 3, fil);
-					writepcxline(inversebuf+i*xdim*3+1, xdim, 3, fil);
-					writepcxline(inversebuf+i*xdim*3+2, xdim, 3, fil);
-				}
-				kfree(inversebuf);
-			}
-		} else {
-#endif
-			for (i=0; i<ydim; i++)
-				writepcxline(ptr+i*bytesperline, xdim, 1, fil);
-#if USE_POLYMOST && USE_OPENGL
-		}
-#endif
-	}
-
-	enddrawing();	//}}}
+	// PCX renders top to bottom, from left to right.
+	// 24-bit images have each scan line written as deinterleaved RGB.
+	screencapture_writeframe(fil, (mode&1), NULL, screencapture_writepcxline);
 
 	// palette last
 #if USE_POLYMOST && USE_OPENGL
@@ -11413,21 +11907,168 @@ static int screencapture_pcx(char *filename, char inverseit)
 #endif
 
 	Bfclose(fil);
-	buildprintf("Saved screenshot to %s\n", fn);
-	Bfree(fn);
-	capturecount++;
+	return(0);
+}
+
+struct pngsums {
+	unsigned int crc;
+	unsigned short adlers1;
+	unsigned short adlers2;
+};
+
+static void screencapture_writepngline(unsigned char *buf, int bytes, int elements, BFILE *fp, void *v)
+{
+	unsigned char header[6];
+	unsigned short blklen;
+	int i;
+	struct pngsums *sums = (struct pngsums *)v;
+
+	blklen = (unsigned short)B_LITTLE16(1 + bytes * elements);	// One extra for the filter type.
+	header[0] = 0;	// BFINAL = 0, BTYPE = 00.
+	memcpy(&header[1], &blklen, 2);
+	blklen = ~blklen;
+	memcpy(&header[3], &blklen, 2);
+
+	header[5] = 0;	// No filter.
+	sums->adlers2 = (sums->adlers2 + sums->adlers1) % 65521;
+	crc32block(&sums->crc, header, sizeof(header));
+	Bfwrite(header, sizeof(header), 1, fp);
+
+	for (i=0; i < bytes * elements; i++) {
+		sums->adlers1 = (sums->adlers1 + buf[i]) % 65521;
+		sums->adlers2 = (sums->adlers2 + sums->adlers1) % 65521;
+	}
+	crc32block(&sums->crc, buf, bytes * elements);
+	Bfwrite(buf, bytes, elements, fp);
+}
+
+static int screencapture_png(char mode)
+{
+	const unsigned char pngsig[] = { 0x89, 'P', 'N', 'G', 0xd, 0xa, 0x1a, 0xa };
+	const unsigned char enddeflate[] = { 1, 0, 0, 0xff, 0xff };
+
+#define BEGIN_PNG_CHUNK(type) { \
+	acclen = 4; \
+	memcpy(&buf[acclen], type, 4); \
+	acclen += 4; \
+}
+#define SET_PNG_CHUNK_LEN(fore) { \
+	/* Accumulated and forecast, minus length and type fields. */ \
+	int len = B_BIG32(acclen + fore - 8); \
+	memcpy(&buf[0], &len, 4); \
+}
+#define END_PNG_CHUNK(ccrc) { \
+	unsigned int crc = B_BIG32(ccrc); \
+	memcpy(&buf[acclen], &crc, 4); \
+	acclen += 4; \
+	Bfwrite(buf, acclen, 1, fil); \
+}
+
+	unsigned char buf[1024];
+	int length, i, acclen, glmode = 0;
+	unsigned short s;
+	BFILE *fil;
+	struct pngsums sums;
+
+#if USE_POLYMOST && USE_OPENGL
+	glmode = (rendmode == 3 && qsetmode == 200);
+#endif
+
+	if ((fil = screencapture_openfile("png")) == NULL) {
+		return -1;
+	}
+
+	Bfwrite(pngsig, sizeof(pngsig), 1, fil);
+
+	// Header.
+	BEGIN_PNG_CHUNK("IHDR");
+	i = B_BIG32(xdim); memcpy(&buf[acclen], &i, 4); acclen += 4;
+	i = B_BIG32(ydim); memcpy(&buf[acclen], &i, 4); acclen += 4;
+	buf[acclen++] = 8;	// Bit depth per sample/palette index.
+	buf[acclen++] = glmode ? 2 : 3;	// Colour type.
+	buf[acclen++] = 0;	// Deflate compression method.
+	buf[acclen++] = 0;	// Adaptive filter.
+	buf[acclen++] = 0;	// No interlace.
+	SET_PNG_CHUNK_LEN(0);
+	END_PNG_CHUNK(crc32once(&buf[4], acclen - 4));
+
+	// Palette if needed.
+#if USE_POLYMOST && USE_OPENGL
+	if (rendmode < 3 || (rendmode == 3 && qsetmode != 200)) {
+#endif
+		BEGIN_PNG_CHUNK("PLTE");
+		for (i=0; i<256; i++, acclen+=3) {
+			buf[acclen+0] = curpalettefaded[i].r;
+			buf[acclen+1] = curpalettefaded[i].g;
+			buf[acclen+2] = curpalettefaded[i].b;
+		}
+		SET_PNG_CHUNK_LEN(0);
+		END_PNG_CHUNK(crc32once(&buf[4], acclen - 4));
+#if USE_POLYMOST && USE_OPENGL
+	}
+#endif
+
+	// Image Data.
+	BEGIN_PNG_CHUNK("IDAT");
+	crc32init(&sums.crc);
+
+	// Content is a Zlib stream.
+	buf[acclen++] = 0x78;	// Deflate, 32k window.
+	buf[acclen++] = 1;		// Check bits 0-4: (0x7800 + 1) % 0x1f == 0
+
+	length = (1 + 2 + 2) + 1 + xdim * (glmode ? 3 : 1);	// Length of one scanline deflate block.
+	length *= ydim;			// By height.
+	length += sizeof(enddeflate);	// Plus length of 'End of Deflate' block.
+	length += 4;			// Plus Adler32 checksum.
+	SET_PNG_CHUNK_LEN(length);
+
+	crc32block(&sums.crc, &buf[4], acclen - 4);
+	Bfwrite(buf, acclen, 1, fil);	// Write header and start of Zlib stream.
+
+	sums.adlers1 = 1;
+	sums.adlers2 = 0;
+	screencapture_writeframe(fil, (mode&1), &sums, screencapture_writepngline);
+
+	// Finalise the Zlib stream.
+	acclen = 0;
+	memcpy(&buf[acclen], enddeflate, sizeof(enddeflate)); acclen += sizeof(enddeflate);
+	s = B_BIG16(sums.adlers2); memcpy(&buf[acclen], &s, 2); acclen += 2;
+	s = B_BIG16(sums.adlers1); memcpy(&buf[acclen], &s, 2); acclen += 2;
+
+	// Finalise the Image Data chunk and write what remains out.
+	crc32block(&sums.crc, buf, acclen);
+	crc32finish(&sums.crc);
+	END_PNG_CHUNK(sums.crc);
+
+	// End chunk.
+	BEGIN_PNG_CHUNK("IEND");
+	SET_PNG_CHUNK_LEN(0);
+	END_PNG_CHUNK(crc32once(&buf[4], acclen - 4));
+
+	Bfclose(fil);
 	return(0);
 }
 
 int screencapture(char *filename, char mode)
 {
-	if (qsetmode == 200 && (mode & 2)) {
-		captureatnextpage = mode;
+	int ret;
+
+	if (filename) {
 		strcpy(capturename, filename);
+	}
+	if (qsetmode == 200 && (mode & 2) && !captureatnextpage) {
+		captureatnextpage = mode;
 		return 0;
 	}
-	if (captureformat == 0) return screencapture_tga(filename,mode&1);
-	else return screencapture_pcx(filename,mode&1);
+	switch (captureformat) {
+		case 0: ret = screencapture_tga(mode&1); break;
+		case 1: ret = screencapture_pcx(mode&1); break;
+		default: ret = screencapture_png(mode&1); break;
+	}
+	if (ret == 0) {
+		buildprintf("Saved screenshot to %s\n", capturename);
+	}
+	return ret;
 }
 
 
@@ -11536,6 +12177,9 @@ void setpolymost2dview(void)
 
 void buildprintf(const char *fmt, ...)
 {
+#ifdef __AMIGA__
+	static
+#endif
 	char tmpstr[1024];
 	va_list va, vac;
 

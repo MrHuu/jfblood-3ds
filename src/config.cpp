@@ -348,7 +348,7 @@ void CONFIG_SetDefaults(void)
     NumVoices = 64;
 #endif
 
-#ifdef GEKKO
+#if defined(GEKKO)
     gSetup.usejoystick = 1;
 #else
     gSetup.usejoystick = 0;
@@ -774,13 +774,15 @@ void CONFIG_SetJoystickDefaults(int style)
 {
     const char **joydefaultset, **joyclickeddefaultset;
     const char **joydigitaldefaultset, **joyanalogdefaultset;
-
+#ifndef __vita__
     if (style) {
         joydefaultset = joystickdefaults_modern;
         joyclickeddefaultset = joystickclickeddefaults_modern;
         joydigitaldefaultset = joystickdigitaldefaults_modern;
         joyanalogdefaultset = joystickanalogdefaults_modern;
-    } else {
+    } else
+#endif
+	{
         joydefaultset = joystickdefaults;
         joyclickeddefaultset = joystickclickeddefaults;
         joydigitaldefaultset = joystickdigitaldefaults;

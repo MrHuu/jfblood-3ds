@@ -2977,7 +2977,7 @@ int kzfindfile (char *filnam)
 #elif defined(VITA)
             if (hfind < 0)
             {
-                char const *s = "ux0:data/jfsw";
+                char const *s = "ux0:data/NBlood";
                 if (wildstpathleng > 0)
                 {
                     filnam[wildstpathleng] = 0;

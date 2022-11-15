@@ -15,7 +15,7 @@
  * the forthcoming GLSL 2 blitter. Also, on a Mac Mini G4 with hampered
  * AGP under Debian 8, surface blit is fast and the renderer slower.
  */
-//#define SDLAYER_USE_RENDERER
+#define SDLAYER_USE_RENDERER
 
 // have stdio.h declare vasprintf
 #ifndef _GNU_SOURCE
@@ -306,8 +306,6 @@ int psp2_main(unsigned int argc, void *argv) {
 		return 1;
 	}
 
-	vglInitExtended(0, 960, 544, 2 * 1024 * 1024, SCE_GXM_MULTISAMPLE_4X);
-    
     baselayer_init();
     
 	return app_main(argc, (char const * const*)argv);
@@ -327,29 +325,7 @@ int psp2_main(unsigned int argc, void *argv) {
 int main(int argc, char *argv[])
 {
 #ifdef VITA
-	// Checking for libshacccg.suprx existence
-	SceIoStat st1, st2;
-	if (!(sceIoGetstat("ur0:/data/libshacccg.suprx", &st1) >= 0 || sceIoGetstat("ur0:/data/external/libshacccg.suprx", &st2) >= 0)) {
-		vglInit(0);
-		SceMsgDialogUserMessageParam msg_param;
-		sceClibMemset(&msg_param, 0, sizeof(SceMsgDialogUserMessageParam));
-		msg_param.buttonType = SCE_MSG_DIALOG_BUTTON_TYPE_OK;
-		msg_param.msg = (const SceChar8*)"Error: Runtime shader compiler (libshacccg.suprx) is not installed.";
-		SceMsgDialogParam param;
-		sceMsgDialogParamInit(&param);
-		param.mode = SCE_MSG_DIALOG_MODE_USER_MSG;
-		param.userMsgParam = &msg_param;
-		sceMsgDialogInit(&param);
-		while (sceMsgDialogGetStatus() != SCE_COMMON_DIALOG_STATUS_FINISHED) {
-			vglSwapBuffers(GL_TRUE);
-		}
-		sceKernelExitProcess(0);
-	}
-	
-	//SceUID crasher_thread = sceKernelCreateThread("crasher", crasher, 0x40, 0x1000, 0, 0, NULL);
-	//sceKernelStartThread(crasher_thread, 0, NULL);
-	
-	SceUID main_thread = sceKernelCreateThread("JFSW", psp2_main, 0x40, 0x800000, 0, 0, NULL);
+	SceUID main_thread = sceKernelCreateThread("jfblood", psp2_main, 0x40, 0x800000, 0, 0, NULL);
 	if (main_thread >= 0){
 		sceKernelStartThread(main_thread, 0, NULL);
 		sceKernelWaitThreadEnd(main_thread, NULL, NULL);
@@ -1076,7 +1052,7 @@ int setvideomode(int x, int y, int c, int fs)
 			else flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
 		}
 
-		/*sdl_window = SDL_CreateWindow(wintitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x, y, flags);
+		sdl_window = SDL_CreateWindow(wintitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, x, y, flags);
 		if (!sdl_window) {
 			buildprintf("Error creating window: %s\n", SDL_GetError());
 
@@ -1088,7 +1064,7 @@ int setvideomode(int x, int y, int c, int fs)
 			}
 #endif
 			return -1;
-		}*/
+		}
 		break;
 	} while (1);
 
@@ -1128,13 +1104,13 @@ int setvideomode(int x, int y, int c, int fs)
 				return -1;
 			}
 #else
-/*
+
 			// 8-bit software with no GL shader blitting goes via the SDL rendering apparatus.
 			sdl_surface = SDL_CreateRGBSurface(0, x, y, 8, 0, 0, 0, 0);
 			if (!sdl_surface) {
 				buildprintf("Error creating surface: %s\n", SDL_GetError());
 				return -1;
-			}*/
+			}
 #endif
 #if USE_OPENGL
 		} else {
@@ -1318,7 +1294,7 @@ void showframe(void)
 	SDL_RenderPresent(sdl_renderer);
 
 #else //SDLAYER_USE_RENDERER
-/*	SDL_Surface *winsurface;
+	SDL_Surface *winsurface;
 
 	if (SDL_LockSurface(sdl_surface)) {
 		debugprintf("Could not lock surface: %s\n", SDL_GetError());
@@ -1342,7 +1318,7 @@ void showframe(void)
 		return;
 	}
 	SDL_BlitSurface(sdl_surface, NULL, winsurface, NULL);
-	SDL_UpdateWindowSurface(sdl_window);*/
+	SDL_UpdateWindowSurface(sdl_window);
 #endif //SDLAYER_USE_RENDERER
 }
 
@@ -1358,11 +1334,11 @@ int setpalette(int UNUSED(start), int UNUSED(num), unsigned char * UNUSED(dapal)
 	}
 #endif
 #ifndef SDLAYER_USE_RENDERER
-/*	if (sdl_surface) {
+	if (sdl_surface) {
 		if (SDL_SetPaletteColors(sdl_surface->format->palette, (const SDL_Color *)curpalettefaded, 0, 256)) {
 			debugprintf("Could not set palette: %s\n", SDL_GetError());
 		}
-	}*/
+	}
 #endif
 	return 0;
 }

@@ -30,7 +30,7 @@ struct LOADITEM {
 
 #pragma pack(push, 1)
 struct RGB {
-    char red, green, blue;
+    unsigned char red, green, blue;
 };
 #pragma pack(pop)
 extern char gStdColor[32];

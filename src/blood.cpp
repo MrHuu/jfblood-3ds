@@ -77,12 +77,16 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 # define UPDATEINTERVAL 604800 // 1w
 # include "winbits.h"
 #else
-# ifndef GEKKO
+# if !defined(GEKKO) && !defined(__vita__)
 #  include <sys/ioctl.h>
 # endif
 #endif /* _WIN32 */
 #ifdef __AMIGA__
 #include <signal.h>
+#endif
+
+#ifdef __vita__
+#include <vitasdk.h>
 #endif
 
 const char* AppProperName = APPNAME;
@@ -1558,6 +1562,24 @@ void LocalKeys(void)
         return;
     }
     char key;
+#ifdef __vita__
+    static uint32_t oldpad;
+    SceCtrlData pad;
+    sceCtrlPeekBufferPositive(0, &pad, 1);
+    if (pad.buttons & SCE_CTRL_START && (!(oldpad & SCE_CTRL_START))) {
+        if (gGameStarted && (gPlayer[myconnectindex].pXSprite->health != 0 || gGameOptions.nGameType > 0))
+        {
+            if (!gGameMenuMgr.m_bActive)
+                gGameMenuMgr.Push(&menuMainWithSave,-1);
+        }
+        else
+        {
+            if (!gGameMenuMgr.m_bActive)
+                gGameMenuMgr.Push(&menuMain,-1);
+        }
+    }
+    oldpad = pad.buttons;
+#endif
     if ((key = keyGetScan()) != 0)
     {
         if ((alt || shift) && gGameOptions.nGameType > 0 && key >= sc_F1 && key <= sc_F10)
@@ -2262,7 +2284,9 @@ int app_main(int argc, char const * const * argv)
 
     wm_setapptitle(APPNAME);
 
+#ifndef __vita__
     initprintf(APPNAME " %s\n", s_buildRev);
+#endif
     PrintBuildInfo();
 
     memcpy(&gGameOptions, &gSingleGameOptions, sizeof(GAMEOPTIONS));
@@ -3370,11 +3394,13 @@ bool AddINIFile(const char *pzFile, bool bForce = false)
     if (!bForce)
     {
         if (findfrompath(pzFile, &pzFN)) return false; // failed to resolve the filename
+#ifndef __vita__
         if (Bstat(pzFN, &st))
         {
             Xfree(pzFN);
             return false;
         } // failed to stat the file
+#endif
         Xfree(pzFN);
         IniFile *pTempIni = new IniFile(pzFile);
         if (!pTempIni->FindSection("Episode1"))

@@ -7,11 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-
-#define GL_RED                                       0x1903
-
-#include "glbuild_fs.h"
-#include "glbuild_vs.h"
+#include <math.h>
 
 struct glbuild_funcs glfunc;
 
@@ -51,7 +47,7 @@ int glbuild_loadfunctions(void)
 #endif
 	INIT_PROC(glGetError);
 	INIT_PROC(glHint);
-	//INIT_PROC(glPixelStorei);
+	INIT_PROC(glPixelStorei);
 	INIT_PROC(glViewport);
 	INIT_PROC(glScissor);
 
@@ -102,7 +98,7 @@ int glbuild_loadfunctions(void)
 	INIT_PROC(glCreateShader);
 	INIT_PROC(glDeleteProgram);
 	INIT_PROC(glDeleteShader);
-	//INIT_PROC(glDetachShader);
+	INIT_PROC(glDetachShader);
 	INIT_PROC(glGetAttribLocation);
 	INIT_PROC(glGetProgramiv);
 	INIT_PROC(glGetProgramInfoLog);
@@ -166,7 +162,7 @@ static GLchar *glbuild_cook_source(const GLchar *source, const char *spec)
 	int keep;
 
 	cooked = strdup(source);
-	/*if (!cooked) {
+	if (!cooked) {
 		debugprintf("glbuild_cook_source: couldn't duplicate source\n");
 		return NULL;
 	}
@@ -186,7 +182,7 @@ static GLchar *glbuild_cook_source(const GLchar *source, const char *spec)
 			for (; *match && *match != '\n' && *match != '\r'; match++) *match = ' ';
 		}
 		pos = end;
-	} while(pos);*/
+	} while(pos);
 
 	return cooked;
 }
@@ -271,22 +267,26 @@ GLuint glbuild_link_program(int shadercount, GLuint *shaders)
 	}
 
 	for (i = 0; i < shadercount; i++) {
-		//glfunc.glDetachShader(program, shaders[i]);
+		glfunc.glDetachShader(program, shaders[i]);
 	}
 
 	return program;
 }
 
-int glbuild_prepare_8bit_shader(glbuild8bit *state, int resx, int resy, int stride)
+int glbuild_prepare_8bit_shader(glbuild8bit *state, int resx, int resy, int stride, int winx, int winy)
 {
 	GLuint shaders[2] = {0,0}, prog = 0;
 	GLint status = 0;
 
-	//->extern const char default_glbuild_fs_glsl[];
-	//-<extern const char default_glbuild_vs_glsl[];
+	extern const char default_glbuild_fs_glsl[];
+	extern const char default_glbuild_vs_glsl[];
 
 	float tx = (float)resx / (float)stride, ty = 1.0;
 	int tsizx = stride, tsizy = resy;
+
+	float winaspect = (float)winx / (float)winy;
+	float frameaspect = (float)resx / (float)resy;
+	float aspectx, aspecty;
 
 	if (!glinfo.texnpot) {
 		for (tsizx = 1; tsizx < stride; tsizx <<= 1) { }
@@ -295,14 +295,28 @@ int glbuild_prepare_8bit_shader(glbuild8bit *state, int resx, int resy, int stri
 		ty = (float)resy / (float)tsizy;
 	}
 
+	// Correct for aspect ratio difference between the window size
+	// and the logical 8-bit surface by skewing the quad we draw.
+	if (fabs(winaspect - frameaspect) < 0.01) {
+		aspectx = aspecty = 1.0;
+	} else if (winaspect > frameaspect) {
+		// Window is wider than the frame.
+		aspectx = frameaspect / winaspect;
+		aspecty = 1.0;
+	} else {
+		// Window is narrower than the frame.
+		aspectx = 1.0;
+		aspecty = winaspect / frameaspect;
+	}
+
 	// Buffer contents: indexes and texcoord/vertex elements.
 	GLushort indexes[6] = { 0, 1, 2, 0, 2, 3 };
 	GLfloat elements[4][4] = {
 		// tx, ty,  vx, vy
-		{ 0.0, ty,  -1.0, -1.0 },
-		{ tx,  ty,   1.0, -1.0 },
-		{ tx,  0.0,  1.0,  1.0 },
-		{ 0.0, 0.0, -1.0,  1.0 },
+		{ 0.0, ty,  -aspectx, -aspecty },
+		{ tx,  ty,   aspectx, -aspecty },
+		{ tx,  0.0,  aspectx,  aspecty },
+		{ 0.0, 0.0, -aspectx,  aspecty },
 	};
 
 	GLint clamp = glinfo.clamptoedge ? GL_CLAMP_TO_EDGE : GL_CLAMP;
@@ -320,9 +334,9 @@ int glbuild_prepare_8bit_shader(glbuild8bit *state, int resx, int resy, int stri
 	glfunc.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp);
 
 #if (USE_OPENGL == USE_GLES2)
-/*	intfmt = GL_LUMINANCE;
+	intfmt = GL_LUMINANCE;
 	extfmt = GL_LUMINANCE;
-#else*/
+#else
 	intfmt = GL_RGB;
 	extfmt = GL_RED;
 #endif
@@ -336,7 +350,7 @@ int glbuild_prepare_8bit_shader(glbuild8bit *state, int resx, int resy, int stri
 	glfunc.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, clamp);
 	glfunc.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, clamp);
 
-	//glfunc.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	glfunc.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// Prepare the vertex and fragment shaders.
 	shaders[0] = glbuild_compile_shader(GL_VERTEX_SHADER, default_glbuild_vs_glsl);
@@ -356,8 +370,8 @@ int glbuild_prepare_8bit_shader(glbuild8bit *state, int resx, int resy, int stri
 	}
 
 	// Shaders were detached in glbuild_link_program.
-//	glfunc.glDeleteShader(shaders[0]);
-//	glfunc.glDeleteShader(shaders[1]);
+	glfunc.glDeleteShader(shaders[0]);
+	glfunc.glDeleteShader(shaders[1]);
 
 	// Connect the textures to the program.
 	glfunc.glUseProgram(prog);
@@ -447,10 +461,12 @@ void glbuild_update_8bit_palette(glbuild8bit *state, const GLvoid *pal)
 void glbuild_update_8bit_frame(glbuild8bit *state, const GLvoid *frame, int resx, int resy, int stride)
 {
 #if (USE_OPENGL == USE_GLES2)
-/*	GLenum extfmt = GL_LUMINANCE;
-#else*/
+	GLenum extfmt = GL_LUMINANCE;
+#else
 	GLenum extfmt = GL_RED;
 #endif
+
+	(void)resx;
 
 	glfunc.glActiveTexture(GL_TEXTURE0);
 	glfunc.glBindTexture(GL_TEXTURE_2D, state->frametex);
@@ -459,6 +475,8 @@ void glbuild_update_8bit_frame(glbuild8bit *state, const GLvoid *frame, int resx
 
 void glbuild_draw_8bit_frame(glbuild8bit *state)
 {
+	(void)state;
+
 #if (USE_OPENGL == USE_GLES2)
 	glfunc.glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 #endif

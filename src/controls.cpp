@@ -36,7 +36,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "map2d.h"
 #include "view.h"
 
-
 int32_t ctrlCheckAllInput(void)
 {
     return (
@@ -72,8 +71,11 @@ void ctrlInit(void)
     CONFIG_SetupJoystick();
 
     CONTROL_JoystickEnabled = (gSetup.usejoystick && CONTROL_JoyPresent);
+#ifdef __vita__
+    CONTROL_MouseEnabled = 0;
+#else
     CONTROL_MouseEnabled = (gSetup.usemouse && CONTROL_MousePresent);
-
+#endif
     // JBF 20040215: evil and nasty place to do this, but joysticks are evil and nasty too
 #ifndef EDUKE32
     for (int i=0; i<MAXJOYAXES; i++)
@@ -156,7 +158,6 @@ int gViewLookRecenter;
 void ctrlGetInput(void)
 {
     ControlInfo info;
-
     if (!gGameStarted || gInputMode != INPUT_MODE_0)
     {
         gInput = {};

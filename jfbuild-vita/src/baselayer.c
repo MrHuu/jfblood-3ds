@@ -88,16 +88,17 @@ static int osdcmd_vars(const osdfuncparm_t *parm)
 	int showval = (parm->numparms < 1);
 
 	if (!Bstrcasecmp(parm->name, "screencaptureformat")) {
-		const char *fmts[2][2] = { {"TGA", "PCX"}, {"0", "1"} };
-		if (showval) { buildprintf("captureformat is %s\n", fmts[captureformat][0]); }
-		else {
-			int i,j;
-			for (j=0; j<2; j++)
-				for (i=0; i<2; i++)
-					if (!Bstrcasecmp(parm->parms[0], fmts[j][i])) break;
-			if (j == 2) return OSDCMD_SHOWHELP;
-			captureformat = i;
+		const char *fmts[3] = { "TGA", "PCX", "PNG" };
+		if (!showval) {
+			int i;
+			for (i=0; i<3; i++)
+				if (!Bstrcasecmp(parm->parms[0], fmts[i]) || atoi(parm->parms[0]) == i) {
+					captureformat = i;
+					break;
+				}
+			if (i == 3) return OSDCMD_SHOWHELP;
 		}
+		buildprintf("screencaptureformat is %s\n", fmts[captureformat]);
 		return OSDCMD_OK;
 	}
 	else if (!Bstrcasecmp(parm->name, "novoxmips")) {
@@ -105,11 +106,13 @@ static int osdcmd_vars(const osdfuncparm_t *parm)
 		else { novoxmips = (atoi(parm->parms[0]) != 0); }
 		return OSDCMD_OK;
 	}
+#ifndef __AMIGA__
 	else if (!Bstrcasecmp(parm->name, "usevoxels")) {
 		if (showval) { buildprintf("usevoxels is %d\n", usevoxels); }
 		else { usevoxels = (atoi(parm->parms[0]) != 0); }
 		return OSDCMD_OK;
 	}
+#endif
 #if defined(DEBUGGINGAIDS) && USE_OPENGL
 	else if (!Bstrcasecmp(parm->name, "debuggllogseverity")) {
 		const char *levels[] = {"none", "notification", "low", "medium", "high"};
@@ -129,10 +132,12 @@ int baselayer_init(void)
 {
     OSD_Init();
 
-	OSD_RegisterFunction("screencaptureformat","screencaptureformat: sets the output format for screenshots (TGA or PCX)",osdcmd_vars);
+	OSD_RegisterFunction("screencaptureformat","screencaptureformat: sets the output format for screenshots (TGA, PCX, PNG)",osdcmd_vars);
 
 	OSD_RegisterFunction("novoxmips","novoxmips: turn off/on the use of mipmaps when rendering 8-bit voxels",osdcmd_vars);
+#ifndef __AMIGA__
 	OSD_RegisterFunction("usevoxels","usevoxels: enable/disable automatic sprite->voxel rendering",osdcmd_vars);
+#endif
 
 #if USE_POLYMOST
 	OSD_RegisterFunction("setrendermode","setrendermode <number>: sets the engine's rendering mode.\n"
@@ -269,6 +274,8 @@ static void APIENTRY gl_debug_proc(GLenum source, GLenum type, GLuint id, GLenum
 	const char *sourcestr = "(unknown)";
 	const char *typestr = "(unknown)";
 	const char *severitystr = "(unknown)";
+
+	(void)id; (void)length; (void)userParam;
 
 	if (debuggllogseverity < 1) return;
 

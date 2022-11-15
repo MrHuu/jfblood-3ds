@@ -42,14 +42,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "sound.h"
 #include "view.h"
 
+#ifdef __vita__
+#include <vitasdk.h>
+#endif
+
 char Wait(int nTicks)
 {
     totalclock = 0;
     while (totalclock < nTicks)
     {
         gameHandleEvents();
+#ifdef __vita__
+        SceCtrlData pad;
+		sceCtrlPeekBufferPositive(0, &pad, 1);
+        if (pad.buttons)
+            return FALSE;
+#else
         if (keyGetScan())
             return FALSE;
+#endif
     }
     return TRUE;
 }

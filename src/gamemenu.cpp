@@ -36,6 +36,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "resource.h"
 #include "view.h"
 
+#ifdef __vita__
+#include <vitasdk.h>
+#endif
+
 CMenuTextMgr gMenuTextMgr;
 CGameMenuMgr gGameMenuMgr;
 
@@ -229,7 +233,41 @@ void CGameMenuMgr::Process(void)
     event.at0 = 0;
     event.at2 = 0;
     char key;
-    if (!pActiveMenu->MouseEvent(event) && (key = keyGetScan()) != 0 )
+#ifdef __vita__
+	if (!pActiveMenu->MouseEvent(event)) {
+#define SINGLE_CLICK(x) pad.buttons & x && (!(oldpad & x))
+		 static uint32_t oldpad = 0;
+		SceCtrlData pad;
+		 sceCtrlPeekBufferPositive(0, &pad, 1);
+		if (SINGLE_CLICK(SCE_CTRL_CROSS)) {
+			event.at0 = kMenuEventEnter;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_DOWN)) {
+			event.at0 = kMenuEventDown;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_UP)) {
+			event.at0 = kMenuEventUp;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_TRIANGLE)) {
+			event.at0 = kMenuEventEscape;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_CIRCLE)) {
+			event.at0 = kMenuEventEscape;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_START)) {
+			event.at0 = kMenuEventSpace;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_LEFT)) {
+			event.at0 = kMenuEventLeft;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(SCE_CTRL_RIGHT)) {
+			event.at0 = kMenuEventRight;
+			event.at2 = 1;
+		}
+		oldpad = pad.buttons;
+	}
+#else
+	if (!pActiveMenu->MouseEvent(event) && (key = keyGetScan()) != 0 )
     {
         keyFlushScans();
         keyFlushChars();
@@ -282,6 +320,7 @@ void CGameMenuMgr::Process(void)
             break;
         }
     }
+#endif
     if (pActiveMenu->Event(event))
         Pop();
 
@@ -2150,7 +2189,9 @@ bool CGameMenuItemZEditBitmap::Event(CGameMenuEvent &event)
         gSaveGameActive = true;
         return true;
     case kMenuEventEnter:
+#ifndef __vita__
         if (!at35 || bScan)
+#endif
         {
             if (at30)
                 at30(this, &event);

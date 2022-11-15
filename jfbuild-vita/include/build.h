@@ -43,16 +43,32 @@ extern "C" {
 #define MAXSPRITESV5 4096
 #define MAXTILESV5   4096
 
+#ifdef __AMIGA__
+#define MAXSECTORS MAXSECTORSV7
+#define MAXWALLS MAXWALLSV7
+#define MAXSPRITES MAXSPRITESV7
+#else
 #define MAXSECTORS MAXSECTORSV8
 #define MAXWALLS MAXWALLSV8
 #define MAXSPRITES MAXSPRITESV8
+#endif
 
+#ifdef __AMIGA__
+#define MAXTILES 6144
+#define MAXVOXELS 80
+#else
 #define MAXTILES 9216
 #define MAXVOXELS 4096
+#endif
 #define MAXSTATUS 1024
 #define MAXPLAYERS 16
+#ifdef __AMIGA__
+#define MAXXDIM 1600
+#define MAXYDIM 1200
+#else
 #define MAXXDIM 2880
 #define MAXYDIM 1800
+#endif
 #define MAXPALOOKUPS 256
 #define MAXPSKYTILES 256
 #define MAXSPRITESONSCREEN 1024
@@ -116,7 +132,14 @@ typedef struct
 	signed char floorshade;
 	unsigned char floorpal, floorxpanning, floorypanning;
 	unsigned char visibility, filler;
+#ifdef ENGINE_19960925
+	union {
+		short lotag, type;
+	};
+	short hitag, extra;
+#else
 	short lotag, hitag, extra;
+#endif
 } sectortype;
 
 //cstat:
@@ -140,7 +163,14 @@ typedef struct
 	short picnum, overpicnum;
 	signed char shade;
 	unsigned char pal, xrepeat, yrepeat, xpanning, ypanning;
+#ifdef ENGINE_19960925
+	union {
+		short lotag, type;
+	};
+	short hitag, extra;
+#else
 	short lotag, hitag, extra;
+#endif
 } walltype;
 
 //cstat:
@@ -168,8 +198,26 @@ typedef struct
 	unsigned char xrepeat, yrepeat;
 	signed char xoffset, yoffset;
 	short sectnum, statnum;
+#ifdef ENGINE_19960925
+	short ang, owner;
+	union {
+		short xvel, index;
+	};
+	short yvel;
+	union {
+		short zvel, inittype;
+	};
+	union {
+		short lotag, type;
+	};
+	union {
+		short hitag, flags;
+	};
+	short extra;
+#else
 	short ang, owner, xvel, yvel, zvel;
 	short lotag, hitag, extra;
+#endif
 } spritetype;
 
 	// 12 bytes
@@ -186,7 +234,9 @@ typedef struct {
 EXTERN sectortype sector[MAXSECTORS];
 EXTERN walltype wall[MAXWALLS];
 EXTERN spritetype sprite[MAXSPRITES];
+#ifndef __AMIGA__
 EXTERN spriteexttype spriteext[MAXSPRITES+MAXUNIQHUDID];
+#endif
 EXTERN int guniqhudid;
 
 EXTERN int spritesortcnt;
@@ -269,8 +319,10 @@ extern unsigned char palfadedelta;
 
 extern int dommxoverlay, novoxmips;
 
+#ifndef __AMIGA__
 extern int tiletovox[MAXTILES];
 extern int usevoxels, voxscale[MAXVOXELS];
+#endif
 #if USE_POLYMOST && USE_OPENGL
 extern int usemodels, usehightile;
 #endif
