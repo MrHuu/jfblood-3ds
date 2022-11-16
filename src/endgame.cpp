@@ -37,6 +37,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "view.h"
 #include "messages.h"
 
+#ifdef __vita__
+#include <vitasdk.h>
+#endif
+
 CEndGameMgr::CEndGameMgr()
 {
     at0 = 0;
@@ -80,9 +84,16 @@ void CEndGameMgr::ProcessKeys(void)
     //}
     //else
     {
+#ifdef __vita__
+        SceCtrlData pad;
+        sceCtrlPeekBufferPositive(0, &pad, 1);
+        if (!pad.buttons || (pad.buttons & SCE_CTRL_CIRCLE))
+#else
         char ch = keyGetScan();
         if (!ch)
+#endif
             return;
+
         if (gGameOptions.nGameType > 0 || numplayers > 1)
             netWaitForEveryone(0);
         Finish();
