@@ -282,6 +282,41 @@ void wm_setwindowtitle(const char *name)
 
 #ifdef VITA
 #include <vitasdk.h>
+#include <vita2d.h>
+uint32_t green;
+uint32_t white;
+uint32_t yellow;
+
+typedef struct{
+    int x;
+    int y;
+    uint32_t *color;
+    char text[256];
+} credits_voice;
+
+int get_x_text(vita2d_pgf *font, char *text) {
+    return (960 - vita2d_pgf_text_width(font, 1.0, text)) / 2;
+}
+
+credits_voice intro[] = {
+    {0, 100, &yellow, "jfblood-vita v.1.1"},
+    {0, 120, &white,  "Port by Rinnegatamante"},
+    {0, 180, &yellow, "Select a game to launch:"},
+	{0, 360, &yellow, "Credits:"},
+	{0, 380, &white, "nukeykt for the original NBlood"},
+	{0, 400, &white, "BSzili for the backport of NBlood to JFBuild"},
+	{0, 420, &white, "Once13one for the Livearea assets"},
+	{0, 440, &white, "CatoTheYounger for betatesting the homebrew"},
+    {0, 480, &yellow, "Thanks to my distinguished Patroners:"},
+    {0, 500, &white,  "@Sarkies_Proxy - drd70f14 - Delon5 - Freddy Parra - TheVita3K Project - mmtechnodrone"},
+	{0, 520, &white,  "Badmanwazzy37 - Shin Megami - sputnik - Heraldian Despot - Jacob Martinez"},
+};
+
+char *games[] = {
+	"Blood",
+	"Cryptic Passage"
+};
+
 int psp2_main(unsigned int argc, void *argv) {
     SceAppUtilInitParam appUtilParam;
     SceAppUtilBootParam appUtilBootParam;
@@ -293,6 +328,58 @@ int psp2_main(unsigned int argc, void *argv) {
 	sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_LANG, (int *)&cmnDlgCfgParam.language);
 	sceAppUtilSystemParamGetInt(SCE_SYSTEM_PARAM_ID_ENTER_BUTTON, (int *)&cmnDlgCfgParam.enterButtonAssign);
     sceCommonDialogSetConfigParam(&cmnDlgCfgParam);
+	
+	SceIoStat st1, st2, st3;
+	uint32_t oldpad;
+	SceCtrlData pad;
+	int k = 0;
+	if ((sceIoGetstat("ux0:/data/NBlood/BLOOD.INI", &st1) >= 0 || sceIoGetstat("ux0:/data/NBlood/BLOOD.BKP", &st2) >= 0) && sceIoGetstat("ux0:/data/NBlood/CRYPTIC.INI", &st3) >= 0) {
+		vita2d_init();
+		vita2d_set_vblank_wait(0);
+		vita2d_pgf *font = vita2d_load_default_pgf();
+		white = RGBA8(0xFF, 0xFF, 0xFF, 0xFF);
+		yellow = RGBA8(0xFF, 0xFF, 0x00, 0xFF);
+		green = RGBA8(0x00, 0xFF, 0x00, 0xFF);
+	
+		int j, z;
+		for (j=0;j<sizeof(intro) / sizeof(*intro);j++){
+			intro[j].x = get_x_text(font, intro[j].text);
+		}
+	
+		for (;;) {
+			sceCtrlPeekBufferPositive(0, &pad, 1);
+			vita2d_start_drawing();
+			vita2d_clear_screen();
+			for (z=0;z<sizeof(intro) / sizeof(*intro);z++) {
+				vita2d_pgf_draw_text(font, intro[z].x, intro[z].y, *intro[z].color, 1.0, intro[z].text);
+			}
+			for (z=0;z<2;z++) {
+				int y = 200 + z * 20;
+				if (y <= 400 && y >= 200) {
+					vita2d_pgf_draw_text(font, get_x_text(font, games[z]), y, k == z ? green : white, 1.0, games[z]);
+				}
+			}
+			vita2d_end_drawing();
+			vita2d_wait_rendering_done();
+			vita2d_swap_buffers();
+			if ((pad.buttons & SCE_CTRL_DOWN) && (!(oldpad & SCE_CTRL_DOWN))) {
+				k = (k + 1) % 2;
+			} else if ((pad.buttons & SCE_CTRL_UP) && (!(oldpad & SCE_CTRL_UP))) {
+				k--;
+				if (k < 0) k = 1;
+			} else if ((pad.buttons & SCE_CTRL_CROSS) && (!(oldpad & SCE_CTRL_CROSS))) {
+				break;
+			}
+			oldpad = pad.buttons;
+		}
+		vita2d_wait_rendering_done();
+		vita2d_fini();
+	}
+	
+	if (k == 0) // Blood
+		sceIoRename("ux0:/data/NBlood/BLOOD.BKP", "ux0:/data/NBlood/BLOOD.INI");
+	else
+		sceIoRename("ux0:/data/NBlood/BLOOD.INI", "ux0:/data/NBlood/BLOOD.BKP");
 	
     scePowerSetArmClockFrequency(444);
     scePowerSetBusClockFrequency(222);

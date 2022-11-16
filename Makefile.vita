@@ -2,8 +2,8 @@ TARGET		:= jfblood
 TITLE		:= JFBLOOD01
 GIT_VERSION := $(shell git describe --abbrev=6 --dirty --always --tags)
 
-LIBS = -lSDL2 -lvitaGL -lvitashark -lmathneon -lvorbisfile -lvorbis -logg  -lspeexdsp -lmpg123 -lSceShaccCgExt \
-	-lc -lSceCommonDialog_stub -lSceAudio_stub -lSceLibKernel_stub -lSceShaccCg_stub \
+LIBS = -lSDL2 -lvita2d -lvorbisfile -lvorbis -logg  -lspeexdsp -lmpg123 \
+	-lc -lSceCommonDialog_stub -lSceAudio_stub -lSceLibKernel_stub \
 	-ltaihen_stub -lSceNet_stub -lSceNetCtl_stub -lpng -lSceDisplay_stub -lSceGxm_stub -lSceHid_stub \
 	-lSceSysmodule_stub -lSceCtrl_stub -lSceTouch_stub -lSceMotion_stub -lm -lSceAppMgr_stub \
 	-lSceAppUtil_stub -lScePgf_stub -ljpeg -lSceRtc_stub -lScePower_stub -lcurl -lssl -lcrypto -lz \
