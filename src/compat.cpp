@@ -62,9 +62,15 @@ int32_t fnlist_getnames(fnlist_t *fnl, const char *dirname, const char *pattern,
     return 0;
 } 
 
+#ifdef __3DS__
+int32_t win_priorityclass;
+int paletteloaded;
+int32_t Numsprites = 0;
+#else
 int win_priorityclass;
 int paletteloaded;
 int Numsprites = 0;
+#endif
 char *g_defNamePtr = NULL;
 int CONTROL_BindsEnabled; // TODO remove
 //const char* s_buildRev = ""; // TODO remove

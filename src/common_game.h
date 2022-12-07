@@ -539,7 +539,7 @@ kAiStatePatrolMax,
 enum BLOOD_GLOBALFLAGS {
     BLOOD_FORCE_WIDELOADSCREEN = 1<<0,
 };
-
+#define BLOOD_FORCE_WIDELOADSCREEN 1
 enum searchpathtypes_t {
     SEARCHPATH_REMOVE = 1<<0,
 };

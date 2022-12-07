@@ -216,6 +216,17 @@ const char oldkeydefaults[NUMGAMEFUNCTIONS*2][MAXGAMEFUNCLEN] =
    "`", "",
    };
 
+#ifdef __3DS__
+static const char * mousedefaults[MAXMOUSEBUTTONS] =
+   {
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   };
+#else
 static const char * mousedefaults[MAXMOUSEBUTTONS] =
    {
    "Weapon_Fire",
@@ -225,7 +236,7 @@ static const char * mousedefaults[MAXMOUSEBUTTONS] =
    "Previous_Weapon",
    "Next_Weapon",
    };
-
+#endif
 
 static const char * mouseclickeddefaults[MAXMOUSEBUTTONS] =
    {
@@ -295,7 +306,59 @@ static const char * joystickanalogdefaults[MAXJOYAXES] =
 static const char * joystickdigitaldefaults[MAXJOYDIGITAL] =
    {
    };
-   
+#elif defined(__3DS__)
+static const char * joystickdefaults[MAXJOYBUTTONSANDHATS] =
+   {
+   "Jump", // Cross
+   "Open", // Circle
+   "Crouch", // Square
+   "Inventory_Right", // Triangle
+   "Map_Toggle", // Select
+   "", // 
+   "", // Start
+   "", //
+   "", //
+   "Weapon_Special_Fire", // L
+   "Weapon_Fire", // R
+   "Inventory", // Up
+   "Inventory_Use", // Down
+   "Previous_Weapon", // Left
+   "Next_Weapon", // Right
+   };
+
+
+static const char * joystickclickeddefaults[MAXJOYBUTTONSANDHATS] =
+   {
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   "",
+   };
+
+
+static const char * joystickanalogdefaults[MAXJOYAXES] =
+   {
+   "analog_strafing",
+   "analog_moving",
+   "analog_turning",
+   "analog_lookingupanddown",
+   };
+
+
+static const char * joystickdigitaldefaults[MAXJOYDIGITAL] =
+   {
+   };
 #elif defined(GEKKO)
 static const char * joystickdefaults[MAXJOYBUTTONSANDHATS] =
    {

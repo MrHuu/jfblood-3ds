@@ -128,6 +128,28 @@ int32_t gFMPianoFix;
 int gWeaponsV10x;
 /////////
 
+#ifdef __3DS__
+int32_t CONFIG_FunctionNameToNum( const char * func )
+   {
+   int32_t i;
+
+   if (!func) return -1; // needed on AROS and possibly on Amiga
+   for (i=0;i<NUMGAMEFUNCTIONS;i++)
+      {
+      if (!Bstrcasecmp(func,gamefunctions[i]))
+         {
+         return i;
+         }
+      }
+   return -1;
+   }
+
+static int32_t SCRIPT_GetString_eduke32(int32_t scripthandle, char const *sectionname, char const *entryname, char *dest)
+{
+    return SCRIPT_GetString(scripthandle, sectionname, entryname, dest, 40); // 40 is MAXRIDECULELENGTH
+}
+#define SCRIPT_GetString SCRIPT_GetString_eduke32
+#else
 #ifndef EDUKE32
 int32 CONFIG_FunctionNameToNum( const char * func )
    {
@@ -171,7 +193,7 @@ int32_t CONFIG_FunctionNameToNum(const char *func)
     return i;
 }
 #endif
-
+#endif // __3DS__
 
 char *CONFIG_FunctionNumToName(int32_t func)
 {
@@ -318,7 +340,10 @@ void CONFIG_SetDefaults(void)
     else
 # endif
     {
-#ifdef __AMIGA__
+#if defined(__3DS__)
+        gSetup.xdim = 400;
+        gSetup.ydim = 240;
+#elif defined __AMIGA__
         gSetup.xdim = 320;
         gSetup.ydim = 200;
 #else
@@ -334,7 +359,7 @@ void CONFIG_SetDefaults(void)
     gSetup.bpp = 8;
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__3DS__)
     MixRate = 44100;
 #elif defined __ANDROID__
     MixRate = droidinfo.audio_sample_rate;
@@ -348,7 +373,7 @@ void CONFIG_SetDefaults(void)
     NumVoices = 64;
 #endif
 
-#if defined(GEKKO)
+#if defined(GEKKO) || defined(__3DS__)
     gSetup.usejoystick = 1;
 #else
     gSetup.usejoystick = 0;
@@ -379,7 +404,7 @@ void CONFIG_SetDefaults(void)
     gBrightness = 8;
     //ud.config.ShowWeapons     = 0;
     SoundToggle     = 1;
-    CDAudioToggle = 0;
+    CDAudioToggle = 1;
 #ifndef EDUKE32
     FXDevice = 0;
     MusicDevice = 0;
@@ -464,7 +489,7 @@ void CONFIG_SetDefaults(void)
     gAutoAim = 1;
     gWeaponSwitch = 1;
 
-#ifdef __AMIGA__
+#if defined(__AMIGA__) && !defined(__3DS__)
     MixRate = 22050;
     NumBits = 8;
     NumVoices = 8;
@@ -774,7 +799,7 @@ void CONFIG_SetJoystickDefaults(int style)
 {
     const char **joydefaultset, **joyclickeddefaultset;
     const char **joydigitaldefaultset, **joyanalogdefaultset;
-#ifndef __vita__
+#ifndef __3DS__ //__vita__
     if (style) {
         joydefaultset = joystickdefaults_modern;
         joyclickeddefaultset = joystickclickeddefaults_modern;

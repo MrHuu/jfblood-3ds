@@ -41,6 +41,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <vitasdk.h>
 #endif
 
+#ifdef __3DS__
+#include <3ds.h>
+#endif
+
 CEndGameMgr::CEndGameMgr()
 {
     at0 = 0;
@@ -88,6 +92,9 @@ void CEndGameMgr::ProcessKeys(void)
         SceCtrlData pad;
         sceCtrlPeekBufferPositive(0, &pad, 1);
         if (!pad.buttons || (pad.buttons & SCE_CTRL_CIRCLE))
+#elif defined(__3DS__)
+        u32 kDown = hidKeysDown();
+		if(!(kDown & KEY_A))
 #else
         char ch = keyGetScan();
         if (!ch)

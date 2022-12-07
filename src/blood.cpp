@@ -89,6 +89,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <vitasdk.h>
 #endif
 
+#ifdef __3DS__
+#include <3ds.h>
+#include "ctrlayer.h"
+#endif
+
 const char* AppProperName = APPNAME;
 const char* AppTechnicalName = APPBASENAME;
 
@@ -1579,6 +1584,21 @@ void LocalKeys(void)
         }
     }
     oldpad = pad.buttons;
+#elif defined(__3DS__)
+    u32 kDown = hidKeysDown();
+    if (kDown & KEY_START)
+    {
+        if (gGameStarted && (gPlayer[myconnectindex].pXSprite->health != 0 || gGameOptions.nGameType > 0))
+        {
+            if (!gGameMenuMgr.m_bActive)
+                gGameMenuMgr.Push(&menuMainWithSave,-1);
+        }
+        else
+        {
+            if (!gGameMenuMgr.m_bActive)
+                gGameMenuMgr.Push(&menuMain,-1);
+        }
+	}
 #endif
     if ((key = keyGetScan()) != 0)
     {
@@ -2325,7 +2345,12 @@ int app_main(int argc, char const * const * argv)
                   "There was a problem initializing the Build engine: %s", engineerrstr);
 #endif
         ERRprintf("app_main: There was a problem initializing the Build engine: %s\n", engineerrstr);
+#ifdef __3DS__
+printf("HUU, some error");
+ exit(0);
+#else
         Bexit(2);
+#endif
     }
 
     if (Bstrcmp(SetupFilename, SETUPFILENAME))
@@ -2392,14 +2417,14 @@ int app_main(int argc, char const * const * argv)
     initprintf("Loading tiles\n");
     if (pUserTiles)
     {
-#ifdef __AMIGA__
+#ifdef __3DS__ //#ifdef __AMIGA__
         char *buffer = new char[BMAX_PATH];
 #endif
         strcpy(buffer,pUserTiles);
         strcat(buffer,"%03i.ART");
         if (!tileInit(0,buffer))
             ThrowError("User specified ART files not found");
-#ifdef __AMIGA__
+#ifdef __3DS__ //ifdef __AMIGA__
         delete[] buffer;
 #endif
     }
@@ -2498,6 +2523,11 @@ int app_main(int argc, char const * const * argv)
     SetupMenus();
     videoSetViewableArea(0, 0, xdim - 1, ydim - 1);
 
+#ifdef __3DS__
+	ctr_clear_console();
+	backlightEnable(false,GSPLCD_SCREEN_BOTTOM);
+#endif
+
 #ifdef EDUKE32
     OSD_Exec("autoexec.cfg");
 #endif
@@ -2510,7 +2540,7 @@ RESTART:
     gViewIndex = myconnectindex;
     gMe = gView = &gPlayer[myconnectindex];
     netBroadcastPlayerInfo(myconnectindex);
-#ifdef __AMIGA__
+#ifdef __3DS__ //#ifdef __AMIGA__
     // TODO send this upstream!
     if (numplayers > 1)
 #endif

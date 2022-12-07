@@ -100,7 +100,7 @@ int nSongSize;
 bool bWaveMusic;
 int nWaveMusicHandle;
 
-#if !defined(EDUKE32) && !defined(__vita__)
+#if !defined(EDUKE32) && !defined(__vita__) && !defined(__3DS__)
 // MIDI -> MP3, WAV replacement function
 #undef S_OpenAudio
 static int32_t S_OpenAudio(const char *fn, char searchfirst, uint8_t const ismusic)

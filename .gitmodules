@@ -1,11 +1,11 @@
 [submodule "jfbuild"]
 	path = jfbuild
 	url = ../jfbuild
-	branch = amiga
+	branch = 3DS_blood
 [submodule "jfaudiolib"]
 	path = jfaudiolib
 	url = ../jfaudiolib
-	branch = amiga
+	branch = 3DS_blood
 [submodule "jfmact"]
 	path = jfmact
 	url = ../jfmact

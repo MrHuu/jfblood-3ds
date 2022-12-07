@@ -44,6 +44,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <vitasdk.h>
 #endif
 
+#ifdef __3DS__
+#include "ctrlayer.h"
+#endif
+
 void SaveGame(CGameMenuItemZEditBitmap *, CGameMenuEvent *);
 
 void SaveGameProcess(CGameMenuItemChain *);
@@ -2598,16 +2602,19 @@ void SaveGame(CGameMenuItemZEditBitmap *pItem, CGameMenuEvent *event)
     int nSlot = pItem->at28;
     if (gGameOptions.nGameType > 0 || !gGameStarted)
         return;
-    if (event->at0 != 6/* || strSaveGameName[0]*/)
-    {
-        gGameMenuMgr.Deactivate();
-        return;
-    }
+//    if (event->at0 != 6/* || strSaveGameName[0]*/)
+//    {
+//        gGameMenuMgr.Deactivate();
+//        return;
+//    }
     G_ModDirSnprintf(strSaveGameName, BMAX_PATH, "game00%02d.sav", nSlot);
 #ifdef __vita__
     SceDateTime time;
     sceRtcGetCurrentClockLocalTime(&time);
     sprintf(strRestoreGameStrings[nSlot], "%d/%d %02d:%02d:%02d", time.day, time.month, time.hour, time.minute, time.second);
+#elif defined(__3DS__)
+    if (ctr_swkbd("Enter save description..", strRestoreGameStrings[nSlot], strRestoreGameStrings[nSlot]) == -1)
+         return;
 #endif
     strcpy(gGameOptions.szUserGameName, strRestoreGameStrings[nSlot]);
     sprintf(gGameOptions.szSaveGameName, "%s", strSaveGameName);

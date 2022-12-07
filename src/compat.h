@@ -314,6 +314,7 @@ enum {
 	T_ERROR = -1,
 };
 typedef struct { char *text; int tokenid; } tokenlist;
+#ifndef __3DS__
 static int getatoken(scriptfile *sf, const tokenlist *tl, int ntokens)
 {
 	char *tok;
@@ -330,6 +331,7 @@ static int getatoken(scriptfile *sf, const tokenlist *tl, int ntokens)
 
 	return T_ERROR;
 }
+#endif // __3DS__
 #define clearDefNamePtr() Xfree(g_defNamePtr)
 #define G_AddDefModule(x) // TODO
 
@@ -589,8 +591,11 @@ extern unsigned char voxlock[MAXVOXELS][MAXVOXMIPS];
 #define CACHE1D_PERMANENT 255
 static inline void tileSetSize(int32_t picnum, int16_t dasizx, int16_t dasizy)
 {
+	#ifdef __3DS__
+	int j;
+	#else
 	int j, dasiz;
-
+#endif
     tilesizx[picnum] = dasizx;
     tilesizy[picnum] = dasizy;
 	picanm[picnum] = 0;
@@ -604,7 +609,7 @@ static inline void tileSetSize(int32_t picnum, int16_t dasizx, int16_t dasizy)
 	picsiz[picnum] += ((unsigned char)(j<<4));
 }
 
-#if defined(__AMIGA__) && !defined(__vita__)
+#if defined(__AMIGA__) && !defined(__vita__) && !defined(__3DS__)
 static inline size_t strnlen(const char * s, size_t len) {
     size_t i = 0;
     for ( ; i < len && s[i]; ++i);

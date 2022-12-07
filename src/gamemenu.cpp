@@ -40,6 +40,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <vitasdk.h>
 #endif
 
+#ifdef __3DS__
+#include <3ds.h>
+#endif
+
 CMenuTextMgr gMenuTextMgr;
 CGameMenuMgr gGameMenuMgr;
 
@@ -265,6 +269,40 @@ void CGameMenuMgr::Process(void)
 			event.at2 = 1;
 		}
 		oldpad = pad.buttons;
+	}
+#elif defined(__3DS__)
+
+	if (!pActiveMenu->MouseEvent(event)) {
+#define SINGLE_CLICK(x) kDown & x && (!(oldpad & x))
+		 static uint32_t oldpad = 0;
+	    u32 kDown = hidKeysDown();
+
+		if (SINGLE_CLICK(KEY_A)) {
+			event.at0 = kMenuEventEnter;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_DDOWN)) {
+			event.at0 = kMenuEventDown;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_DUP)) {
+			event.at0 = kMenuEventUp;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_B)) {
+			event.at0 = kMenuEventEscape;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_SELECT)) {
+			event.at0 = kMenuEventEscape;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_START)) {
+			event.at0 = kMenuEventSpace;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_DLEFT)) {
+			event.at0 = kMenuEventLeft;
+			event.at2 = 1;
+		} else if (SINGLE_CLICK(KEY_DRIGHT)) {
+			event.at0 = kMenuEventRight;
+			event.at2 = 1;
+		}
+		oldpad = kDown;
 	}
 #else
 	if (!pActiveMenu->MouseEvent(event) && (key = keyGetScan()) != 0 )
@@ -1433,7 +1471,7 @@ CGameMenuItemSlider::CGameMenuItemSlider(const char *_pzText, int _nFont, int _n
     nShowValue = _nShowValue;
 }
 
-CGameMenuItemSlider::CGameMenuItemSlider(const char *_pzText, int _nFont, int _nX, int _nY, int _nWidth, int *pnValue, int _nRangeLow, int _nRangeHigh, int _nStep, void(*_pCallback)(CGameMenuItemSlider *), int _nSliderTile, int _nCursorTile, int _nShowValue)
+CGameMenuItemSlider::CGameMenuItemSlider2(const char *_pzText, int _nFont, int _nX, int _nY, int _nWidth, int *pnValue, int _nRangeLow, int _nRangeHigh, int _nStep, void(*_pCallback)(CGameMenuItemSlider *), int _nSliderTile, int _nCursorTile, int _nShowValue)
 {
     m_pzText = _pzText;
     m_nFont = _nFont;
