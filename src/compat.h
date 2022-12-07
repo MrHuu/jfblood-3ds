@@ -604,7 +604,7 @@ static inline void tileSetSize(int32_t picnum, int16_t dasizx, int16_t dasizy)
 	picsiz[picnum] += ((unsigned char)(j<<4));
 }
 
-#if defined(__AMIGA__) && !defined(__vita__)
+#if defined(__AMIGA__) && !defined(__vita__) && !defined(__3DS__)
 static inline size_t strnlen(const char * s, size_t len) {
     size_t i = 0;
     for ( ; i < len && s[i]; ++i);

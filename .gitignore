@@ -9,3 +9,9 @@
 *.elf
 *.velf
 *.vpk
+*.lst
+*.smdh
+*.bnr
+*.3dsx
+*.cia
+/build_ctr

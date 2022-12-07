@@ -385,7 +385,7 @@ void scrSetGameMode(int vidMode, int XRes, int YRes, int nBits)
         initprintf("Failure setting video mode %dx%dx%d %s! Trying next mode...\n", XRes, YRes,
                     nBits, vidMode ? "fullscreen" : "windowed");
 
-#ifdef __AMIGA__
+#ifdef __3DS__ //#ifdef __AMIGA__
 		// TODO check the window/fullscreen counterpart with the same resolution first
 		gSetup.fullscreen = 1;
 		gSetup.xdim = 320;

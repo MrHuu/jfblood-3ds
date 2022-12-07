@@ -351,7 +351,8 @@ static const char * joystickanalogdefaults[MAXJOYAXES] =
 static const char * joystickdigitaldefaults[MAXJOYDIGITAL] =
    {
    };
-#elif defined __AMIGA__
+//#elif defined __AMIGA__
+#elif defined __3DS__
 static const char * joystickdefaults[MAXJOYBUTTONSANDHATS] =
    {
    "Weapon_Fire", // Red

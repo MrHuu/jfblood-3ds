@@ -128,6 +128,28 @@ int32_t gFMPianoFix;
 int gWeaponsV10x;
 /////////
 
+#ifdef __3DS__
+int32_t CONFIG_FunctionNameToNum( const char * func )
+   {
+   int32_t i;
+
+   if (!func) return -1; // needed on AROS and possibly on Amiga
+   for (i=0;i<NUMGAMEFUNCTIONS;i++)
+      {
+      if (!Bstrcasecmp(func,gamefunctions[i]))
+         {
+         return i;
+         }
+      }
+   return -1;
+   }
+
+static int32_t SCRIPT_GetString_eduke32(int32_t scripthandle, char const *sectionname, char const *entryname, char *dest)
+{
+    return SCRIPT_GetString(scripthandle, sectionname, entryname, dest, 40); // 40 is MAXRIDECULELENGTH
+}
+#define SCRIPT_GetString SCRIPT_GetString_eduke32
+#else
 #ifndef EDUKE32
 int32 CONFIG_FunctionNameToNum( const char * func )
    {
@@ -171,7 +193,7 @@ int32_t CONFIG_FunctionNameToNum(const char *func)
     return i;
 }
 #endif
-
+#endif // __3DS__
 
 char *CONFIG_FunctionNumToName(int32_t func)
 {

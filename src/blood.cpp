@@ -2325,7 +2325,12 @@ int app_main(int argc, char const * const * argv)
                   "There was a problem initializing the Build engine: %s", engineerrstr);
 #endif
         ERRprintf("app_main: There was a problem initializing the Build engine: %s\n", engineerrstr);
+#ifdef __3DS__
+printf("HUU, some error");
+ exit(0);
+#else
         Bexit(2);
+#endif
     }
 
     if (Bstrcmp(SetupFilename, SETUPFILENAME))
@@ -2392,14 +2397,14 @@ int app_main(int argc, char const * const * argv)
     initprintf("Loading tiles\n");
     if (pUserTiles)
     {
-#ifdef __AMIGA__
+#ifdef __3DS__ //#ifdef __AMIGA__
         char *buffer = new char[BMAX_PATH];
 #endif
         strcpy(buffer,pUserTiles);
         strcat(buffer,"%03i.ART");
         if (!tileInit(0,buffer))
             ThrowError("User specified ART files not found");
-#ifdef __AMIGA__
+#ifdef __3DS__ //ifdef __AMIGA__
         delete[] buffer;
 #endif
     }
@@ -2510,12 +2515,12 @@ RESTART:
     gViewIndex = myconnectindex;
     gMe = gView = &gPlayer[myconnectindex];
     netBroadcastPlayerInfo(myconnectindex);
-#ifdef __AMIGA__
+#ifdef __3DS__ //#ifdef __AMIGA__
     // TODO send this upstream!
     if (numplayers > 1)
 #endif
     initprintf("Waiting for network players!\n");
-    netWaitForEveryone(0);
+//    netWaitForEveryone(0);
     if (gRestartGame)
     {
         // Network error

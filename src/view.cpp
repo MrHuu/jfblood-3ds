@@ -2724,6 +2724,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                 break;
             case 1:
             {
+#ifndef __3DS__
 #ifndef __AMIGA__
 #ifdef __AMIGA__
                 if (usevoxels /*&& gDetail >= 4*/ && tiletovox[pTSprite->picnum] != -1)
@@ -2735,6 +2736,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     break;
                 }
 #endif
+#endif // __3DS__
                 int dX = cX - pTSprite->x;
                 int dY = cY - pTSprite->y;
                 RotateVector(&dX, &dY, 128-pTSprite->ang);
@@ -2752,6 +2754,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
             }
             case 2:
             {
+#ifndef __3DS__
 #ifndef __AMIGA__
 #ifdef __AMIGA__
                 if (usevoxels /*&& gDetail >= 4*/ && tiletovox[pTSprite->picnum] != -1)
@@ -2763,6 +2766,7 @@ void viewProcessSprites(int32_t cX, int32_t cY, int32_t cZ, int32_t cA, int32_t 
                     break;
                 }
 #endif
+#endif /__3DS__
                 int dX = cX - pTSprite->x;
                 int dY = cY - pTSprite->y;
                 RotateVector(&dX, &dY, 128-pTSprite->ang);

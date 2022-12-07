@@ -764,7 +764,8 @@ int dbLoadMap(const char *pPath, int *pX, int *pY, int *pZ, short *pAngle, short
     memset(show2dsector,0,sizeof(show2dsector));
     memset(show2dwall,0,sizeof(show2dwall));
     memset(show2dsprite,0,sizeof(show2dsprite));
-#ifndef __AMIGA__
+//#ifndef __AMIGA__
+#ifndef __3DS__
     memset(spriteext,0,kMaxSprites*sizeof(spriteext_t));
 #endif
 

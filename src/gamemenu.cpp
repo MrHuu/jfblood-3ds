@@ -1433,7 +1433,7 @@ CGameMenuItemSlider::CGameMenuItemSlider(const char *_pzText, int _nFont, int _n
     nShowValue = _nShowValue;
 }
 
-CGameMenuItemSlider::CGameMenuItemSlider(const char *_pzText, int _nFont, int _nX, int _nY, int _nWidth, int *pnValue, int _nRangeLow, int _nRangeHigh, int _nStep, void(*_pCallback)(CGameMenuItemSlider *), int _nSliderTile, int _nCursorTile, int _nShowValue)
+CGameMenuItemSlider::CGameMenuItemSlider2(const char *_pzText, int _nFont, int _nX, int _nY, int _nWidth, int *pnValue, int _nRangeLow, int _nRangeHigh, int _nStep, void(*_pCallback)(CGameMenuItemSlider *), int _nSliderTile, int _nCursorTile, int _nShowValue)
 {
     m_pzText = _pzText;
     m_nFont = _nFont;
